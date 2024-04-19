@@ -1,6 +1,6 @@
 {
   "name": "billd-desk-electron",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "billd desk客户端",
   "repository": {
     "type": "git",
@@ -16,7 +16,8 @@
     "build:mac": "vite build && electron-builder --mac",
     "build:win": "vite build && electron-builder --win",
     "dev": "vite",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "release": "standard-version"
   },
   "dependencies": {
     "@kangc/v-md-editor": "^2.3.17",
@@ -35,6 +36,7 @@
     "pinia-plugin-persistedstate": "^3.2.1",
     "socket.io-client": "^4.7.4",
     "spark-md5": "^3.0.2",
+    "standard-version": "^9.5.0",
     "vconsole": "^3.15.1",
     "vite-plugin-commonjs": "^0.10.1",
     "vue": "^3.3.4",
