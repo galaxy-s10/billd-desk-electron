@@ -52,14 +52,15 @@ function createWindow() {
       // nodeIntegration: true, // 在网页中集成Node
       preload: path.join(__dirname, 'preload.js'),
     },
+    frame: false,
   });
-  ipcMain.on('disabledWinDrag', () => {
-    console.log('收到disabledWinDrag');
+  ipcMain.on('windowClose', () => {
+    console.log('收到windowClose');
     try {
-      win?.webContents.send('disabledWinDragRes', { msg: 'ok' });
+      win?.close();
     } catch (error) {
       console.error(error);
-      win?.webContents.send('disabledWinDragRes', {
+      win?.webContents.send('windowCloseRes', {
         msg: JSON.stringify(error),
       });
     }
@@ -103,6 +104,66 @@ function createWindow() {
       });
     }
   });
+  ipcMain.on('mouseScrollDown', async (_event, amount) => {
+    console.log('收到mouseScrollDown');
+    try {
+      await nutjs.mouse.scrollDown(amount);
+      win?.webContents.send('mouseScrollDownRes', {
+        isErr: false,
+        msg: { amount },
+      });
+    } catch (error) {
+      win?.webContents.send('mouseScrollDownRes', {
+        isErr: true,
+        msg: JSON.stringify(error),
+      });
+    }
+  });
+  ipcMain.on('mouseScrollUp', async (_event, amount) => {
+    console.log('收到mouseScrollUp');
+    try {
+      await nutjs.mouse.scrollUp(amount);
+      win?.webContents.send('mouseScrollUpRes', {
+        isErr: false,
+        msg: { amount },
+      });
+    } catch (error) {
+      win?.webContents.send('mouseScrollUpRes', {
+        isErr: true,
+        msg: JSON.stringify(error),
+      });
+    }
+  });
+  ipcMain.on('mouseScrollLeft', async (_event, amount) => {
+    console.log('收到mouseScrollLeft');
+    try {
+      await nutjs.mouse.scrollLeft(amount);
+      win?.webContents.send('mouseScrollLeftRes', {
+        isErr: false,
+        msg: { amount },
+      });
+    } catch (error) {
+      win?.webContents.send('mouseScrollLeftRes', {
+        isErr: true,
+        msg: JSON.stringify(error),
+      });
+    }
+  });
+  ipcMain.on('mouseScrollRight', async (_event, amount) => {
+    console.log('收到mouseScrollRight');
+    try {
+      await nutjs.mouse.scrollRight(amount);
+      win?.webContents.send('mouseScrollRightRes', {
+        isErr: false,
+        msg: { amount },
+      });
+    } catch (error) {
+      win?.webContents.send('mouseScrollRightRes', {
+        isErr: true,
+        msg: JSON.stringify(error),
+      });
+    }
+  });
   ipcMain.on('mouseSetPosition', async (_event, x, y) => {
     console.log('收到mouseSetPosition', x, y);
     try {
@@ -118,10 +179,11 @@ function createWindow() {
       });
     }
   });
-  ipcMain.on('mouseMove', async (_event, x, y) => {
+  ipcMain.on('mouseMove', (_event, x, y) => {
     console.log('收到mouseMove', x, y);
     try {
-      await nutjs.mouse.move([{ x, y }]);
+      // await nutjs.mouse.move([{ x, y }]);
+      nutjs.mouse.move([{ x, y }]);
       win?.webContents.send('mouseMoveRes', {
         isErr: false,
         msg: { x, y },
@@ -245,6 +307,24 @@ function createWindow() {
     win?.webContents.send('getMousePositionRes', {
       point,
     });
+  });
+  ipcMain.on('setWindowPosition', (_event, x, y) => {
+    console.log('收到setWindowPosition');
+    const point = win?.setPosition(x, y);
+    if (point) {
+      win?.webContents.send('setWindowPositionRes', {
+        position: { x: point[0], y: point[1] },
+      });
+    }
+  });
+  ipcMain.on('getWindowPosition', () => {
+    console.log('收到getWindowPosition');
+    const point = win?.getPosition();
+    if (point) {
+      win?.webContents.send('getWindowPositionRes', {
+        position: { x: point[0], y: point[1] },
+      });
+    }
   });
   ipcMain.on('getScreenStream', async () => {
     try {

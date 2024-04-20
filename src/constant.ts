@@ -7,12 +7,12 @@ export const QQ_CLIENT_ID = `101958191`;
 export const QQ_OAUTH_URL = `https://graph.qq.com/oauth2.0`;
 export const QQ_REDIRECT_URI = `https://live.${prodDomain}/oauth/qq_login`;
 
-export const WECHAT_GZH_APPID = `wxbd243c01ac5ad1b7`; // 公众号
-export const WECHAT_GZH_OAUTH_URL = `https://open.weixin.qq.com/connect/oauth2/authorize?`;
+export const WECHAT_GZH_APPID = ``; // 公众号
+export const WECHAT_GZH_OAUTH_URL = ``;
 
-export const WECHAT_REDIRECT_URI = `https://live.${prodDomain}/oauth/wechat_login`;
+export const WECHAT_REDIRECT_URI = ``;
 
-export const QRCODE_LOGIN_URI = `https://live.${prodDomain}/qrcodeLogin`;
+export const QRCODE_LOGIN_URI = ``;
 
 export const AUTHOR_GITHUB = `https://github.com/galaxy-s10`;
 
@@ -20,15 +20,17 @@ export const appBuildInfo =
   // @ts-ignore
   process.env.BilldHtmlWebpackPlugin as BilldHtmlWebpackPluginLog;
 
-// export const WEBSOCKET_URL =
-//   process.env.NODE_ENV === 'development'
-//     ? `ws://192.168.1.102:4300` // `ws://localhost:4300`
-//     : `ws://192.168.1.102:4300`;
+export const NODE_ENV = process.env.NODE_ENV;
 
 export const WEBSOCKET_URL =
   process.env.NODE_ENV === 'development'
     ? `ws://localhost:4300` // `ws://localhost:4300`
-    : `wss://srs-pull.${prodDomain}`;
+    : `ws://192.168.1.103:4300`;
+
+// export const WEBSOCKET_URL =
+//   process.env.NODE_ENV === 'development'
+//     ? `ws://localhost:4300` // `ws://localhost:4300`
+//     : `wss://srs-pull.${prodDomain}`;
 
 export const AXIOS_BASEURL =
   process.env.NODE_ENV === 'development'

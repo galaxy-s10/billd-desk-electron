@@ -1,44 +1,54 @@
 <template>
   <div>
     <div>
+      <div>
+        <!-- <div v-if="NODE_ENV === 'development'"> -->
+        <div>wss：{{ WEBSOCKET_URL }}</div>
+        <div>axios：{{ AXIOS_BASEURL }}</div>
+      </div>
       <n-input-group>
-        <n-button>窗口id</n-button>
+        <n-input-group-label>窗口id</n-input-group-label>
         <n-input
           v-model:value="windowId"
-          :style="{ width: '250px' }"
+          :style="{ width: '200px' }"
           disabled
         />
-        <n-button @click="copyToClipBoard(windowId)">复制</n-button>
+        <n-button @click="handleCopy(windowId)">复制</n-button>
       </n-input-group>
       <n-input-group>
-        <n-button>我的设备</n-button>
+        <n-input-group-label>我的设备</n-input-group-label>
         <n-input
           v-model:value="mySocketId"
-          :style="{ width: '250px' }"
+          :style="{ width: '200px' }"
+          disabled
         />
-        <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
+        <n-button @click="handleCopy(mySocketId)">复制</n-button>
       </n-input-group>
 
       <n-input-group>
-        <n-button>控制设备</n-button>
+        <n-input-group-label>控制设备</n-input-group-label>
         <n-input
           v-model:value="receiverId"
-          :style="{ width: '250px' }"
+          :style="{ width: '200px' }"
         />
-        <n-button @click="startRemote">控制</n-button>
+        <n-button
+          v-if="!appStore.remoteDesk.isRemoteing"
+          @click="startRemote"
+        >
+          开始控制
+        </n-button>
+        <n-button
+          type="error"
+          @click="handleClose"
+          v-else
+        >
+          结束控制
+        </n-button>
       </n-input-group>
     </div>
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
-      <span v-if="!appStore.remoteDesk.isRemoteing">等待远程</span>
-      <n-button
-        type="error"
-        @click="handleClose"
-        v-else
-      >
-        结束控制
-      </n-button>
     </div>
   </div>
 </template>
@@ -48,6 +58,7 @@ import { copyToClipBoard, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { routerName } from '@/router';
@@ -116,6 +127,18 @@ onMounted(() => {
   });
   window.electronAPI.ipcRenderer.on('getMousePositionRes', (_event, source) => {
     console.log('getMousePositionRes', source);
+  });
+  window.electronAPI.ipcRenderer.on('mouseScrollDownRes', (_event, source) => {
+    console.log('mouseScrollDownRes', source);
+  });
+  window.electronAPI.ipcRenderer.on('mouseScrollUpRes', (_event, source) => {
+    console.log('mouseScrollUpRes', source);
+  });
+  window.electronAPI.ipcRenderer.on('mouseScrollLeftRes', (_event, source) => {
+    console.log('mouseScrollLeftRes', source);
+  });
+  window.electronAPI.ipcRenderer.on('mouseScrollRightRes', (_event, source) => {
+    console.log('mouseScrollRightRes', source);
   });
   window.electronAPI.ipcRenderer.on('mouseMoveRes', (_event, source) => {
     console.log('mouseMoveRes', source);
@@ -192,6 +215,11 @@ onMounted(() => {
   );
 });
 
+function handleCopy(str) {
+  copyToClipBoard(str);
+  window.$message.success('复制成功');
+}
+
 function startRemote() {
   if (receiverId.value === '') {
     window.$message.warning('请输入控制设备');
@@ -226,9 +254,9 @@ watch(
           const y = (setting.height || 0) * (data.y / 1000);
           if (data.type === RemoteDeskBehaviorEnum.setPosition) {
             mouseSetPosition(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.move) {
+          } else if (data.type === RemoteDeskBehaviorEnum.mouseMove) {
             mouseMove(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.drag) {
+          } else if (data.type === RemoteDeskBehaviorEnum.mouseDrag) {
             mouseDrag(x, y);
           } else if (data.type === RemoteDeskBehaviorEnum.leftClick) {
             mouseLeftClick(x, y);
@@ -242,6 +270,14 @@ watch(
             mouseReleaseButtonLeft(x, y);
           } else if (data.type === RemoteDeskBehaviorEnum.keyboardType) {
             keyboardType(data.keyboardtype);
+          } else if (data.type === RemoteDeskBehaviorEnum.scrollDown) {
+            mouseScrollDown(data.amount);
+          } else if (data.type === RemoteDeskBehaviorEnum.scrollUp) {
+            mouseScrollUp(data.amount);
+          } else if (data.type === RemoteDeskBehaviorEnum.scrollLeft) {
+            mouseScrollLeft(data.amount);
+          } else if (data.type === RemoteDeskBehaviorEnum.scrollRight) {
+            mouseScrollRight(data.amount);
           }
         }
       };
@@ -276,6 +312,7 @@ watch(
   }
 );
 
+/** 将程序主窗口移动到屏幕右下角 */
 function handleMoveScreenRightBottom() {
   window.electronAPI.ipcRenderer.send('handleMoveScreenRightBottom');
 }
@@ -313,6 +350,18 @@ function mouseRightClick(x, y) {
 }
 function handleDebug() {
   window.electronAPI.ipcRenderer.send('handleOpenDevTools');
+}
+function mouseScrollDown(amount) {
+  window.electronAPI.ipcRenderer.send('mouseScrollDown', amount);
+}
+function mouseScrollUp(amount) {
+  window.electronAPI.ipcRenderer.send('mouseScrollUp', amount);
+}
+function mouseScrollLeft(amount) {
+  window.electronAPI.ipcRenderer.send('mouseScrollLeft', amount);
+}
+function mouseScrollRight(amount) {
+  window.electronAPI.ipcRenderer.send('mouseScrollRight', amount);
 }
 </script>
 

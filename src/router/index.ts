@@ -1,5 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 
+import Layout from '@/layout/index.vue';
+
 import type { RouteRecordRaw } from 'vue-router';
 
 export const commonRouterName = {
@@ -53,12 +55,19 @@ export const defaultRoutes: RouteRecordRaw[] = [
   {
     name: routerName.home,
     path: '/',
-    component: () => import('@/views/home/index.vue'),
-  },
-  {
-    name: routerName.webrtc,
-    path: '/webrtc',
-    component: () => import('@/views/webrtc/index.vue'),
+    component: Layout,
+    children: [
+      {
+        name: routerName.home,
+        path: '/',
+        component: () => import('@/views/home/index.vue'),
+      },
+      {
+        name: routerName.webrtc,
+        path: '/webrtc',
+        component: () => import('@/views/webrtc/index.vue'),
+      },
+    ],
   },
 ];
 

@@ -1,11 +1,16 @@
 <template>
   <div>
     <div>
+      <div>
+        <!-- <div v-if="NODE_ENV === 'development'"> -->
+        <div>wss：{{ WEBSOCKET_URL }}</div>
+        <div>axios：{{ AXIOS_BASEURL }}</div>
+      </div>
       <n-input-group>
         <n-button>窗口id</n-button>
         <n-input
           v-model:value="windowId"
-          :style="{ width: '250px' }"
+          :style="{ width: '200px' }"
           disabled
         />
         <n-button @click="copyToClipBoard(windowId)">复制</n-button>
@@ -15,7 +20,7 @@
         <n-button>我的设备</n-button>
         <n-input
           v-model:value="mySocketId"
-          :style="{ width: '250px' }"
+          :style="{ width: '200px' }"
           disabled
         />
         <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
@@ -25,12 +30,13 @@
         <n-button>控制设备</n-button>
         <n-input
           v-model:value="receiverId"
-          :style="{ width: '250px' }"
+          :style="{ width: '200px' }"
           disabled
         />
         <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
       </n-input-group>
     </div>
+
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
@@ -61,6 +67,7 @@ import { copyToClipBoard, getRandomString, windowReload } from 'billd-utils';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useAppStore } from '@/store/app';
@@ -261,9 +268,9 @@ watch(
           const y = (setting.height || 0) * (data.y / 1000);
           if (data.type === RemoteDeskBehaviorEnum.setPosition) {
             mouseSetPosition(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.move) {
+          } else if (data.type === RemoteDeskBehaviorEnum.mouseMove) {
             mouseMove(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.drag) {
+          } else if (data.type === RemoteDeskBehaviorEnum.mouseDrag) {
             mouseDrag(x, y);
           } else if (data.type === RemoteDeskBehaviorEnum.leftClick) {
             mouseLeftClick(x, y);
@@ -402,6 +409,7 @@ function handleKeyDown(e: KeyboardEvent) {
         keyboardtype: keyMap[e.code] || e.key,
         x: 0,
         y: 0,
+        amount: 0,
       },
     });
 }
@@ -420,6 +428,7 @@ function handleDoublelclick() {
         keyboardtype: 0,
         x: 0,
         y: 0,
+        amount: 0,
       },
     });
 }
@@ -438,6 +447,7 @@ function handleContextmenu() {
         keyboardtype: 0,
         x: 0,
         y: 0,
+        amount: 0,
       },
     });
 }
@@ -477,6 +487,7 @@ function handleMouseDown(event: MouseEvent) {
           : RemoteDeskBehaviorEnum.pressButtonLeft,
         x,
         y,
+        amount: 0,
       },
     });
 }
@@ -504,10 +515,11 @@ function handleMouseMove(event: MouseEvent) {
         roomId: roomId.value,
         sender: mySocketId.value,
         receiver: receiverId.value,
-        type: RemoteDeskBehaviorEnum.move,
+        type: RemoteDeskBehaviorEnum.mouseMove,
         keyboardtype: 0,
         x,
         y,
+        amount: 0,
       },
     });
 }
@@ -545,6 +557,7 @@ function handleMouseUp(event: MouseEvent) {
           : RemoteDeskBehaviorEnum.releaseButtonLeft,
         x,
         y,
+        amount: 0,
       },
     });
   isLongClick = false;

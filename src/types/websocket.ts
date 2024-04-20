@@ -129,8 +129,8 @@ export type WsRoomNoLiveType = IWsFormat<{
 }>;
 
 export enum RemoteDeskBehaviorEnum {
-  move,
-  drag,
+  mouseMove,
+  mouseDrag,
   pressButtonLeft,
   pressButtonRight,
   releaseButtonLeft,
@@ -155,6 +155,7 @@ export type WsRemoteDeskBehaviorType = IWsFormat<{
   x: number;
   y: number;
   keyboardtype: string | number;
+  amount: number;
 }>;
 
 export interface IDanmu {
