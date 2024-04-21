@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.15](https://github.com/galaxy-s10/billd-desk-electron/compare/v0.0.14...v0.0.15) (2024-04-21)
+
+
+### Bug Fixes
+
+* 主窗口拖动 ([5362c3a](https://github.com/galaxy-s10/billd-desk-electron/commit/5362c3a1503ecd7c673289b5353838f8df0f3f04))
+
 ### [0.0.14](https://github.com/galaxy-s10/billd-desk-electron/compare/v0.0.13...v0.0.14) (2024-04-20)
 
 ### [0.0.13](https://github.com/galaxy-s10/billd-desk-electron/compare/v0.0.12...v0.0.13) (2024-04-20)
