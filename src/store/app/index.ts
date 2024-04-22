@@ -6,6 +6,11 @@ import { mobileRouterName } from '@/router';
 import { ILiveRoom } from '@/types/ILiveRoom';
 
 export type AppRootState = {
+  version: string;
+  workAreaSize: {
+    width: number;
+    height: number;
+  };
   remoteDesk: {
     sender: string;
     startRemoteDesk: boolean;
@@ -72,6 +77,8 @@ export type AppRootState = {
 export const useAppStore = defineStore('app', {
   state: (): AppRootState => {
     return {
+      version: '',
+      workAreaSize: { width: 0, height: 0 },
       remoteDesk: {
         startRemoteDesk: false,
         sender: '',

@@ -1,100 +1,112 @@
 <template>
-  <div
-    class="layout"
-    @mousedown="handleMouseDown"
-    @mousemove="handleMouseMove"
-    @mouseup="handleMouseUp"
-    @mouseout="handleMouseUp"
-  >
-    <div class="top-border">
+  <div class="layout">
+    <div
+      class="top-border"
+      @mousedown="handleMouseDown"
+      @mousemove="handleMouseMove"
+      @mouseup="handleMouseUp"
+      @mouseleave="handleMouseUp"
+    >
       <div
         class="ico close"
         @click="handleClose"
-      ></div>
-      <div class="ico min"></div>
+      >
+        <div class="corss"></div>
+      </div>
+      <div
+        class="ico min"
+        @click="handleMin"
+      >
+        <div class="heng"></div>
+      </div>
       <div class="ico max"></div>
     </div>
-    {{ windowPosition }}
-    {{ downClientPosition }}
     <RouterView></RouterView>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 
+import { useNetworkStore } from '@/store/network';
+
+const networkStore = useNetworkStore();
 const isDown = ref(false);
 
-const windowPosition = ref({ x: 0, y: 0 });
 const downClientPosition = ref({ clientX: 0, clientY: 0 });
 
-onMounted(() => {
-  window.electronAPI.ipcRenderer.on(
-    'getWindowPositionRes',
-    (_event, source) => {
-      console.log('getWindowPositionRes', source, source.position);
-      windowPosition.value = source.position;
-    }
-  );
-});
-
 function handleClose() {
-  window.electronAPI.ipcRenderer.send('windowClose');
+  networkStore.removeAllWsAndRtc();
+  setTimeout(() => {
+    window.electronAPI.ipcRenderer.send('windowClose');
+  }, 300);
+}
+
+function handleMin() {
+  window.electronAPI.ipcRenderer.send('windowMinimize');
 }
 
 function handleMouseDown(event: MouseEvent) {
-  console.log('handleMouseDown');
+  isDown.value = true;
   downClientPosition.value.clientX = event.clientX;
   downClientPosition.value.clientY = event.clientY;
-  isDown.value = true;
-  window.electronAPI.ipcRenderer.send('getWindowPosition');
 }
 
 function handleMouseMove(event: MouseEvent) {
   if (!isDown.value) return;
-  console.log('handleMouseMove', event.clientX);
-  const x = downClientPosition.value.clientX - event.clientX;
-  const y = downClientPosition.value.clientY - event.clientY;
-  downClientPosition.value.clientX = event.clientX;
-  downClientPosition.value.clientY = event.clientY;
-  windowPosition.value.x -= x;
-  windowPosition.value.y -= y;
   window.electronAPI.ipcRenderer.send(
     'setWindowPosition',
-    windowPosition.value.x,
-    windowPosition.value.y
+    event.screenX - downClientPosition.value.clientX,
+    event.screenY - downClientPosition.value.clientY
   );
 }
 function handleMouseUp() {
-  console.log('handleMouseUp');
   isDown.value = false;
 }
 </script>
 
 <style lang="scss" scoped>
 .layout {
+  box-sizing: border-box;
   width: 100vw;
   height: 100vh;
   .top-border {
     display: flex;
     align-items: center;
+    box-sizing: border-box;
     padding: 2px 8px;
     width: 100vw;
-    height: 20px;
+    height: 40px;
     border-bottom: 1px solid #e8e4e4;
     background-color: #faf2f2;
     // -webkit-user-select: none;
     // -webkit-app-region: drag;
+
     -webkit-app-region: no-drag;
 
     .ico {
-      margin-right: 8px;
-      width: 12px;
-      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
+      font-size: 12px;
       cursor: pointer;
 
       -webkit-app-region: no-drag;
+      .corss {
+        width: 8px;
+        height: 8px;
+
+        @include cross(black, 1px);
+      }
+      .heng {
+        width: 7px;
+        height: 1px;
+        background-color: black;
+      }
       &.close {
         background-color: #eb6a5e;
       }
@@ -102,7 +114,8 @@ function handleMouseUp() {
         background-color: #f4bf4f;
       }
       &.max {
-        background-color: #61c554;
+        background-color: #dedede;
+        cursor: auto;
       }
     }
   }

@@ -46,5 +46,29 @@ export const useNetworkStore = defineStore('network', {
       }
       this.rtcMap.delete(socketId);
     },
+    removeAllWsAndRtc() {
+      this.wsMap.forEach((item) => {
+        item.close();
+      });
+      this.rtcMap.forEach((item) => {
+        item.close();
+      });
+      this.wsMap.clear();
+      this.rtcMap.clear();
+    },
+    removeAllRtc() {
+      console.log(this.rtcMap.size, 'llll');
+      this.rtcMap.forEach((item) => {
+        console.log('item', item.receiver, item.sender);
+        item.close();
+      });
+      this.rtcMap.clear();
+    },
+    removeAllWs() {
+      this.wsMap.forEach((item) => {
+        item.close();
+      });
+      this.wsMap.clear();
+    },
   },
 });

@@ -62,12 +62,12 @@ export const defaultRoutes: RouteRecordRaw[] = [
         path: '/',
         component: () => import('@/views/home/index.vue'),
       },
-      {
-        name: routerName.webrtc,
-        path: '/webrtc',
-        component: () => import('@/views/webrtc/index.vue'),
-      },
     ],
+  },
+  {
+    name: routerName.webrtc,
+    path: '/webrtc',
+    component: () => import('@/views/webrtc/index.vue'),
   },
 ];
 

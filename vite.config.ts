@@ -5,6 +5,7 @@ import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
 import electron from 'vite-plugin-electron/simple';
+import pkg from './package.json';
 
 const outputStaticUrl = 'dist';
 
@@ -87,6 +88,7 @@ export default defineConfig(({ command, mode }) => {
         VUE_APP_RELEASE_PROJECT_ENV: JSON.stringify(
           process.env.VUE_APP_RELEASE_PROJECT_ENV
         ),
+        VUE_APP_RELEASE_PROJECT_VERSION: JSON.stringify(pkg.version),
       },
     },
 

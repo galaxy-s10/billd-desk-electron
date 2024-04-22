@@ -28,6 +28,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let win: BrowserWindow | null;
+let winBounds: Electron.Rectangle | null;
 const childWindowMap = new Map<number, BrowserWindow>();
 
 function handleUrlQuery(obj: Record<string, string>) {
@@ -41,26 +42,63 @@ function handleUrlQuery(obj: Record<string, string>) {
     return res;
   }
 }
+const windowNormalParams = { width: 800, height: 600 };
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: windowNormalParams.width,
+    height: windowNormalParams.height,
     autoHideMenuBar: true,
     webPreferences: {
-      devTools: true,
+      // devTools: true,
       // nodeIntegration: true, // 在网页中集成Node
       preload: path.join(__dirname, 'preload.js'),
     },
     frame: false,
+  });
+  winBounds = win.getBounds();
+  ipcMain.on('childWindowClose', (_event, windowId) => {
+    console.log('收到childWindowClose');
+    try {
+      const childWindow = childWindowMap.get(Number(windowId));
+      childWindow?.close();
+    } catch (error) {
+      console.log('childWindowClose失败');
+      console.log(error);
+      win?.webContents.send('childWindowCloseRes', {
+        msg: JSON.stringify(error),
+      });
+    }
   });
   ipcMain.on('windowClose', () => {
     console.log('收到windowClose');
     try {
       win?.close();
     } catch (error) {
-      console.error(error);
+      console.log(error);
       win?.webContents.send('windowCloseRes', {
+        msg: JSON.stringify(error),
+      });
+    }
+  });
+  ipcMain.on('windowMinimize', () => {
+    console.log('收到windowMinimize');
+    try {
+      win?.minimize();
+    } catch (error) {
+      console.log(error);
+      win?.webContents.send('windowMinimizeRes', {
+        msg: JSON.stringify(error),
+      });
+    }
+  });
+  ipcMain.on('windowMaximize', () => {
+    console.log('收到windowMaximize');
+    try {
+      win?.maximize();
+    } catch (error) {
+      console.log(error);
+      win?.webContents.send('windowMaximizeRes', {
         msg: JSON.stringify(error),
       });
     }
@@ -77,7 +115,7 @@ function createWindow() {
         win?.webContents.send('handleOpenDevToolsRes', { msg: 'ok' });
       }
     } catch (error) {
-      console.error(error);
+      console.log(error);
       win?.webContents.send('handleOpenDevToolsRes', {
         msg: JSON.stringify(error),
       });
@@ -85,21 +123,22 @@ function createWindow() {
   });
   ipcMain.on('handleMoveScreenRightBottom', () => {
     console.log('收到handleMoveScreenRightBottom');
+    if (!win) return;
     try {
       const { width, height, y } = screen.getPrimaryDisplay().workArea;
       // 窗口的高度和宽度
-      const bounds = win?.getBounds();
-      const windowWidth = bounds?.width || 300;
-      const windowHeight = bounds?.height || 300;
-      // const [windowWidth, windowHeight] = win?.getContentSize() || [300, 300];
+      const bounds = win.getBounds();
+      const windowWidth = bounds.width;
+      const windowHeight = bounds.height;
+      // const [windowWidth, windowHeight] = win?.getContentSize() ;
       // 计算新位置
       const newX = width - windowWidth; // 屏幕左下角的 X 坐标是 0
       const newY = height - windowHeight; // 需要减去窗口本身的高度
       // 移动窗口
-      win?.setPosition(newX, newY + y);
+      win.setPosition(newX, newY + y);
     } catch (error) {
-      console.error(error);
-      win?.webContents.send('handleMoveScreenRightBottomRes', {
+      console.log(error);
+      win.webContents.send('handleMoveScreenRightBottomRes', {
         msg: JSON.stringify(error),
       });
     }
@@ -303,18 +342,49 @@ function createWindow() {
   ipcMain.on('getMousePosition', async () => {
     console.log('收到getMousePosition');
     const point = await nutjs.mouse.getPosition();
-    console.log(point);
     win?.webContents.send('getMousePositionRes', {
       point,
     });
   });
+  ipcMain.on('setChildWindowBounds', (_event, windowId, width, height) => {
+    console.log('收到setChildWindowBounds');
+    console.log(windowId, width, height);
+    const childWindow = childWindowMap.get(Number(windowId));
+    console.log(childWindow);
+    if (!childWindow) return;
+    try {
+      childWindow.setBounds({ width, height });
+      childWindow.webContents.send('setChildWindowBoundsRes', {
+        width,
+        height,
+      });
+    } catch (error) {
+      console.log('setChildWindowBounds错误');
+      console.log(error);
+      childWindow.webContents.send('setChildWindowBoundsRes', {
+        isErr: true,
+        msg: '',
+      });
+    }
+  });
   ipcMain.on('setWindowPosition', (_event, x, y) => {
     console.log('收到setWindowPosition');
-    const point = win?.setPosition(x, y);
-    if (point) {
-      win?.webContents.send('setWindowPositionRes', {
-        position: { x: point[0], y: point[1] },
+    if (!win) return;
+    try {
+      if (winBounds) {
+        // electron无边框窗口在Windows下拖拽导致窗口放大（Windows系统缩放不为100%时）
+        // https://github.com/electron/electron/issues/20320
+        // https://github.com/electron/electron/issues/10862
+        win.setBounds(winBounds);
+      }
+      win.setPosition(x, y);
+      win.webContents.send('setWindowPositionRes', {
+        x,
+        y,
+        winBounds,
       });
+    } catch (error) {
+      console.log(error);
     }
   });
   ipcMain.on('getWindowPosition', () => {
@@ -345,6 +415,7 @@ function createWindow() {
         stream: res[0],
       });
     } catch (error) {
+      console.log('getScreenStream失败');
       console.log(error);
       win?.webContents.send('getScreenStreamRes', {
         isErr: true,
@@ -356,6 +427,13 @@ function createWindow() {
   ipcMain.on('getMainWindowId', (_event, data) => {
     console.log('electron收到getMainWindowId', data);
     win?.webContents.send('getMainWindowIdRes', { id: win.id });
+  });
+
+  ipcMain.on('workAreaSize', (_event, data) => {
+    console.log('electron收到workAreaSize', data);
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+    win?.webContents.send('workAreaSizeRes', { width, height });
   });
 
   ipcMain.on('getWindowId', (_event, data) => {
@@ -371,17 +449,35 @@ function createWindow() {
   ipcMain.on('createWindow', (_event, data) => {
     try {
       console.log('electron收到createWindow', data);
+      let w = data.data.width || windowNormalParams.width;
+      let h = data.data.height || windowNormalParams.height;
+      if (data.data.useWorkAreaSize) {
+        const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+        w = width;
+        h = height;
+      }
       const childWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: w,
+        height: h,
         autoHideMenuBar: true,
-        x: 100,
-        y: 100,
+        x: data.data.x || 0,
+        y: data.data.y || 0,
         webPreferences: {
           devTools: true,
           // nodeIntegration: true, // 在网页中集成Node
           preload: path.join(__dirname, 'preload.js'),
         },
+      });
+      childWindow.on('close', () => {
+        childWindow?.webContents.send('childWindowClose', {
+          windowId: `${childWindow.id}`,
+        });
+      });
+      childWindow.on('closed', () => {
+        // 在子窗口关闭时触发
+        win?.webContents.send('childWindowClosed', {
+          windowId: `${childWindow.id}`,
+        });
       });
       childWindowMap.set(Number(childWindow.id), childWindow);
       let url = '';
@@ -403,7 +499,7 @@ function createWindow() {
       if (process.env.VITE_DEV_SERVER_URL) {
         url = `${process.env.VITE_DEV_SERVER_URL as string}#/${params}`;
         childWindow.loadURL(url);
-        childWindow.webContents.openDevTools();
+        // childWindow.webContents.openDevTools();
       } else {
         url = `${path.join(
           process.env.DIST as string,
@@ -435,7 +531,7 @@ function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL as string);
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(process.env.DIST as string, 'index.html'));
   }

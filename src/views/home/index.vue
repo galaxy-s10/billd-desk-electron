@@ -3,6 +3,7 @@
     <div>
       <div>
         <!-- <div v-if="NODE_ENV === 'development'"> -->
+        <div>version：{{ appStore.version }}</div>
         <div>wss：{{ WEBSOCKET_URL }}</div>
         <div>axios：{{ AXIOS_BASEURL }}</div>
       </div>
@@ -26,23 +27,24 @@
       </n-input-group>
 
       <n-input-group>
-        <n-input-group-label>控制设备</n-input-group-label>
+        <n-input-group-label>被控设备</n-input-group-label>
         <n-input
           v-model:value="receiverId"
           :style="{ width: '200px' }"
+          placeholder="请输入被控设备"
         />
         <n-button
           v-if="!appStore.remoteDesk.isRemoteing"
           @click="startRemote"
         >
-          开始控制
+          开始远程
         </n-button>
         <n-button
           type="error"
           @click="handleClose"
           v-else
         >
-          结束控制
+          结束远程
         </n-button>
       </n-input-group>
     </div>
@@ -59,6 +61,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
+import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { routerName } from '@/router';
@@ -85,12 +88,13 @@ const roomId = ref(num);
 const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
-
+const isControlOther = ref(false);
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
 
 onUnmounted(() => {
+  networkStore.removeAllWsAndRtc();
   handleClose();
 });
 
@@ -225,14 +229,22 @@ function startRemote() {
     window.$message.warning('请输入控制设备');
     return;
   }
+  isControlOther.value = true;
   window.electronAPI.ipcRenderer.send('createWindow', {
     type: 'createWindow',
-    data: { route: routerName.webrtc, query: { receiverId: receiverId.value } },
+    data: {
+      route: routerName.webrtc,
+      query: { receiverId: receiverId.value },
+      x: 0,
+      y: 0,
+      useWorkAreaSize: true,
+    },
   });
 }
 
 function handleClose() {
   networkStore.removeRtc(receiverId.value);
+  ioFlag.value = false;
 }
 
 watch(
@@ -289,7 +301,11 @@ watch(
   () => appStore.remoteDesk.isRemoteing,
   (newval) => {
     if (newval) {
-      handleMoveScreenRightBottom();
+      if (!isControlOther.value) {
+        handleMoveScreenRightBottom();
+      }
+    } else {
+      handleClose();
     }
   }
 );
@@ -308,6 +324,20 @@ watch(
   (newval) => {
     if (newval !== '') {
       receiverId.value = appStore.remoteDesk.sender;
+    }
+  }
+);
+
+watch(
+  () => appStore.remoteDesk.isClose,
+  (newval) => {
+    if (newval) {
+      networkStore.removeRtc(receiverId.value);
+      useTip({
+        content: '远程连接断开',
+        hiddenCancel: true,
+        hiddenClose: true,
+      }).catch();
     }
   }
 );

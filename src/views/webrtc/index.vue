@@ -1,63 +1,67 @@
 <template>
-  <div>
-    <div>
-      <div>
-        <!-- <div v-if="NODE_ENV === 'development'"> -->
-        <div>wss：{{ WEBSOCKET_URL }}</div>
-        <div>axios：{{ AXIOS_BASEURL }}</div>
-      </div>
-      <n-input-group>
-        <n-button>窗口id</n-button>
-        <n-input
-          v-model:value="windowId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="copyToClipBoard(windowId)">复制</n-button>
-      </n-input-group>
-
-      <n-input-group>
-        <n-button>我的设备</n-button>
-        <n-input
-          v-model:value="mySocketId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
-      </n-input-group>
-
-      <n-input-group>
-        <n-button>控制设备</n-button>
-        <n-input
-          v-model:value="receiverId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
-      </n-input-group>
-    </div>
-
+  <div class="wrap">
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
-      <span v-if="!appStore.remoteDesk.isRemoteing">等待远程</span>
-      <n-button
-        type="error"
-        @click="handleClose"
-        v-else
-      >
-        结束控制
-      </n-button>
     </div>
+    <template v-if="NODE_ENV !== 'development'">
+      <div>
+        <div>
+          <div>wss：{{ WEBSOCKET_URL }}</div>
+          <div>axios：{{ AXIOS_BASEURL }}</div>
+        </div>
+        <n-input-group>
+          <n-button>窗口id</n-button>
+          <n-input
+            v-model:value="windowId"
+            :style="{ width: '200px' }"
+            disabled
+          />
+          <n-button @click="copyToClipBoard(windowId)">复制</n-button>
+        </n-input-group>
+
+        <n-input-group>
+          <n-button>我的设备</n-button>
+          <n-input
+            v-model:value="mySocketId"
+            :style="{ width: '200px' }"
+            disabled
+          />
+          <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
+        </n-input-group>
+
+        <n-input-group>
+          <n-button>控制设备</n-button>
+          <n-input
+            v-model:value="receiverId"
+            :style="{ width: '200px' }"
+            disabled
+          />
+          <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
+        </n-input-group>
+      </div>
+    </template>
+
     <div
       class="remote-video"
       ref="videoWrapRef"
+      :style="{
+        width: appStore.workAreaSize.width + 'px',
+        height: appStore.workAreaSize.height + 'px',
+      }"
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
       @mouseup="handleMouseUp"
       @dblclick="handleDoublelclick"
       @contextmenu="handleContextmenu"
     ></div>
+  </div>
+
+  <div
+    v-if="showLoading"
+    class="loading"
+  >
+    <div class="txt">loading</div>
   </div>
 </template>
 
@@ -67,7 +71,8 @@ import { copyToClipBoard, getRandomString, windowReload } from 'billd-utils';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
+import { AXIOS_BASEURL, NODE_ENV, WEBSOCKET_URL } from '@/constant';
+import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useAppStore } from '@/store/app';
@@ -99,6 +104,8 @@ const roomId = ref(num);
 const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
+const videoMap = ref(new Map());
+const showLoading = ref(true);
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
@@ -121,6 +128,7 @@ watch(
 );
 
 onUnmounted(() => {
+  networkStore.removeAllWsAndRtc();
   handleClose();
   window.removeEventListener('keydown', handleKeyDown);
 });
@@ -149,6 +157,18 @@ onMounted(() => {
       type: 'getMainWindowId',
     });
   }
+  window.electronAPI.ipcRenderer.on('workAreaSizeRes', (_event, source) => {
+    console.log('workAreaSizeRes', source);
+    appStore.workAreaSize.width = source.width;
+    appStore.workAreaSize.height = source.height;
+  });
+
+  window.electronAPI.ipcRenderer.send('workAreaSize');
+
+  window.electronAPI.ipcRenderer.on('childWindowClose', () => {
+    networkStore.removeAllWsAndRtc();
+    handleClose();
+  });
 
   window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
     console.log('getMainWindowIdRes', source);
@@ -294,8 +314,8 @@ watch(
 watch(
   () => appStore.remoteDesk.isRemoteing,
   (newval) => {
-    if (newval) {
-      handleMoveScreenRightBottom();
+    if (!newval) {
+      handleClose();
     }
   }
 );
@@ -310,10 +330,30 @@ watch(
 );
 
 watch(
+  () => appStore.remoteDesk.isClose,
+  (newval) => {
+    if (newval) {
+      networkStore.removeRtc(receiverId.value);
+      useTip({
+        content: '远程连接断开',
+        hiddenCancel: true,
+        hiddenClose: true,
+      })
+        .catch()
+        .then(() => {
+          window.electronAPI.ipcRenderer.send(
+            'childWindowClose',
+            windowId.value
+          );
+        });
+    }
+  }
+);
+
+watch(
   () => networkStore.rtcMap,
   (newVal) => {
     newVal.forEach((item) => {
-      console.log(item, videoWrapRef.value);
       const rect = videoWrapRef.value?.getBoundingClientRect();
       if (rect) {
         videoFullBox({
@@ -324,6 +364,29 @@ watch(
           videoEl: item.videoEl,
         });
         if (videoWrapRef.value) {
+          if (videoMap.value.has(item.receiver)) {
+            return;
+          }
+          videoMap.value.set(item.receiver, 1);
+          item.videoEl.addEventListener('loadedmetadata', () => {
+            console.log(
+              'loadedmetadata',
+              item.videoEl.videoWidth,
+              item.videoEl.videoHeight
+            );
+            window.$message.success(
+              `${item.videoEl.videoWidth}__${item.videoEl.videoHeight}`
+            );
+            showLoading.value = false;
+            // window.electronAPI.ipcRenderer.send(
+            //   'setChildWindowBounds',
+            //   windowId.value,
+            //   300,
+            //   400
+            //   // item.videoEl.videoWidth,
+            //   // item.videoEl.videoHeight
+            // );
+          });
           videoWrapRef.value.appendChild(item.videoEl);
         }
       }
@@ -563,10 +626,6 @@ function handleMouseUp(event: MouseEvent) {
   isLongClick = false;
 }
 
-function handleMoveScreenRightBottom() {
-  window.electronAPI.ipcRenderer.send('handleMoveScreenRightBottom');
-}
-
 function handleScreen() {
   window.electronAPI.ipcRenderer.send('getScreenStream');
 }
@@ -607,10 +666,29 @@ function handleDebug() {
 </script>
 
 <style lang="scss" scoped>
-.remote-video {
-  max-width: 100vw;
-  max-height: 100vh;
-  line-height: 0;
-  cursor: none;
+.wrap {
+  .version {
+    text-align: center;
+    font-size: 20px;
+  }
+  .remote-video {
+    line-height: 0;
+    cursor: none;
+  }
+}
+.loading {
+  z-index: 999;
+  background-color: #fff !important;
+
+  @extend %maskBg;
+
+  .txt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    font-size: 20px;
+    transform: translate(-50%, -50%);
+  }
 }
 </style>
