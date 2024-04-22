@@ -1,10 +1,11 @@
 <template>
   <div class="wrap">
-    <div>
+    <!-- <div class="test">
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
-    </div>
-    <template v-if="NODE_ENV !== 'development'">
+    </div> -->
+    <template v-if="NODE_ENV === 'development'">
+      <!-- <template v-if="NODE_ENV !== 'development'"> -->
       <div>
         <div>
           <div>wss：{{ WEBSOCKET_URL }}</div>
@@ -39,16 +40,16 @@
           />
           <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
         </n-input-group>
+        <div>
+          <n-button @click="windowReload">刷新页面</n-button>
+          <n-button @click="handleDebug">打开调试</n-button>
+        </div>
       </div>
     </template>
 
     <div
       class="remote-video"
       ref="videoWrapRef"
-      :style="{
-        width: appStore.workAreaSize.width + 'px',
-        height: appStore.workAreaSize.height + 'px',
-      }"
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
       @mouseup="handleMouseUp"
@@ -67,12 +68,17 @@
 
 <script lang="ts" setup>
 import { Key } from '@nut-tree/shared';
-import { copyToClipBoard, getRandomString, windowReload } from 'billd-utils';
+import {
+  computeBox,
+  copyToClipBoard,
+  getRandomString,
+  windowReload,
+} from 'billd-utils';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { AXIOS_BASEURL, NODE_ENV, WEBSOCKET_URL } from '@/constant';
-import { useTip } from '@/hooks/use-tip';
+import { closeUseTip, useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useAppStore } from '@/store/app';
@@ -90,6 +96,7 @@ const route = useRoute();
 const { initWs, connectStatus } = useWebsocket();
 const appStore = useAppStore();
 const networkStore = useNetworkStore();
+const titlebarHeight = ref(50);
 
 const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
   useWebRtcRemoteDesk();
@@ -106,6 +113,7 @@ const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
 const videoMap = ref(new Map());
 const showLoading = ref(true);
+const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
@@ -128,14 +136,15 @@ watch(
 );
 
 onUnmounted(() => {
+  videoWrapRef.value?.removeEventListener('wheel', handleMouseWheel);
   networkStore.removeAllWsAndRtc();
   handleClose();
   window.removeEventListener('keydown', handleKeyDown);
 });
 
 onMounted(() => {
+  videoWrapRef.value?.addEventListener('wheel', handleMouseWheel);
   window.addEventListener('keydown', handleKeyDown);
-
   initWs({
     roomId: roomId.value,
     isAnchor: false,
@@ -150,6 +159,11 @@ onMounted(() => {
     return;
   }
 
+  if (route.query.width && route.query.height) {
+    appStore.workAreaSize.width = Number(route.query.width);
+    appStore.workAreaSize.height = Number(route.query.height);
+  }
+
   if (route.query.windowId !== undefined) {
     windowId.value = `${route.query.windowId as string}`;
   } else {
@@ -157,13 +171,19 @@ onMounted(() => {
       type: 'getMainWindowId',
     });
   }
-  window.electronAPI.ipcRenderer.on('workAreaSizeRes', (_event, source) => {
-    console.log('workAreaSizeRes', source);
-    appStore.workAreaSize.width = source.width;
-    appStore.workAreaSize.height = source.height;
-  });
 
-  window.electronAPI.ipcRenderer.send('workAreaSize');
+  window.electronAPI.ipcRenderer.on(
+    'getChildWindowTitlebarHeightRes',
+    (_event, source) => {
+      console.log('getChildWindowTitlebarHeightRes', source);
+      titlebarHeight.value = source.titlebarHeight;
+    }
+  );
+
+  window.electronAPI.ipcRenderer.send(
+    'getChildWindowTitlebarHeight',
+    windowId.value
+  );
 
   window.electronAPI.ipcRenderer.on('childWindowClose', () => {
     networkStore.removeAllWsAndRtc();
@@ -222,48 +242,128 @@ onMounted(() => {
   window.electronAPI.ipcRenderer.on('mouseRightClickRes', (_event, source) => {
     console.log('mouseRightClickRes', source);
   });
-  window.electronAPI.ipcRenderer.on(
-    'getScreenStreamRes',
-    async (_event, source) => {
-      console.log('收到getScreenStreamRes', source);
-      if (source.isErr) {
-        window.$message.error(source.msg);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            // @ts-ignore
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: source.stream.id,
-            },
-          },
-        });
-        anchorStream.value = stream;
-        console.log('anchorStream', anchorStream);
-        updateWebRtcRemoteDeskConfig({
-          roomId: roomId.value,
-          anchorStream: anchorStream.value,
-        });
-        webRtcRemoteDesk.newWebRtc({
-          // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
-          // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
-          sender: mySocketId.value,
-          receiver: receiverId.value,
-          videoEl: videoWrapRef.value!,
-        });
-        webRtcRemoteDesk.sendOffer({
-          sender: mySocketId.value,
-          receiver: receiverId.value,
-        });
-      } catch (err) {
-        console.log(err);
-      }
+  window.electronAPI.ipcRenderer.on('getScreenStreamRes', (_event, source) => {
+    console.log('收到getScreenStreamRes', source);
+    if (source.isErr) {
+      window.$message.error(source.msg);
+      return;
     }
-  );
+    chromeMediaSourceId.value = source.stream.id;
+    handleDesktopStream(source.stream.id);
+  });
 });
+
+async function handleDesktopStream(chromeMediaSourceId) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        // @ts-ignore
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId,
+        },
+      },
+    });
+    anchorStream.value = stream;
+    updateWebRtcRemoteDeskConfig({
+      roomId: roomId.value,
+      anchorStream: anchorStream.value,
+    });
+    webRtcRemoteDesk.newWebRtc({
+      // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
+      // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
+      sender: mySocketId.value,
+      receiver: receiverId.value,
+      videoEl: videoWrapRef.value!,
+    });
+    webRtcRemoteDesk.sendOffer({
+      sender: mySocketId.value,
+      receiver: receiverId.value,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+function handleMouseWheel(e: WheelEvent) {
+  // if (!appStore.remoteDesk.isRemoteing) {
+  if (!appStore.remoteDesk.get(receiverId.value)?.isRemoteing) {
+    return;
+  }
+  // console.log('handleMouseWheel', e);
+  e.preventDefault();
+  if (e.deltaY > 0) {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.remoteDeskBehavior,
+        data: {
+          roomId: roomId.value,
+          sender: mySocketId.value,
+          receiver: receiverId.value,
+          type: RemoteDeskBehaviorEnum.scrollDown,
+          keyboardtype: 0,
+          x: 0,
+          y: 0,
+          amount: Math.abs(e.deltaY),
+        },
+      });
+  } else if (e.deltaY < 0) {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.remoteDeskBehavior,
+        data: {
+          roomId: roomId.value,
+          sender: mySocketId.value,
+          receiver: receiverId.value,
+          type: RemoteDeskBehaviorEnum.scrollUp,
+          keyboardtype: 0,
+          x: 0,
+          y: 0,
+          amount: Math.abs(e.deltaY),
+        },
+      });
+  }
+  if (e.deltaX > 0) {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.remoteDeskBehavior,
+        data: {
+          roomId: roomId.value,
+          sender: mySocketId.value,
+          receiver: receiverId.value,
+          type: RemoteDeskBehaviorEnum.scrollRight,
+          keyboardtype: 0,
+          x: 0,
+          y: 0,
+          amount: Math.abs(e.deltaX),
+        },
+      });
+  } else if (e.deltaX < 0) {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.remoteDeskBehavior,
+        data: {
+          roomId: roomId.value,
+          sender: mySocketId.value,
+          receiver: receiverId.value,
+          type: RemoteDeskBehaviorEnum.scrollLeft,
+          keyboardtype: 0,
+          x: 0,
+          y: 0,
+          amount: Math.abs(e.deltaX),
+        },
+      });
+  }
+}
 
 function handleClose() {
   networkStore.removeRtc(receiverId.value);
@@ -312,7 +412,7 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.isRemoteing,
+  () => appStore.remoteDesk.get(receiverId.value)?.isRemoteing,
   (newval) => {
     if (!newval) {
       handleClose();
@@ -321,7 +421,7 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.startRemoteDesk,
+  () => appStore.remoteDesk.get(receiverId.value)?.startRemoteDesk,
   (newval) => {
     if (newval) {
       handleScreen();
@@ -330,7 +430,7 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.isClose,
+  () => appStore.remoteDesk.get(receiverId.value)?.isClose,
   (newval) => {
     if (newval) {
       networkStore.removeRtc(receiverId.value);
@@ -346,6 +446,8 @@ watch(
             windowId.value
           );
         });
+    } else {
+      closeUseTip();
     }
   }
 );
@@ -354,41 +456,41 @@ watch(
   () => networkStore.rtcMap,
   (newVal) => {
     newVal.forEach((item) => {
-      const rect = videoWrapRef.value?.getBoundingClientRect();
-      if (rect) {
-        videoFullBox({
-          wrapSize: {
-            width: rect.width,
-            height: rect.height,
-          },
-          videoEl: item.videoEl,
-        });
-        if (videoWrapRef.value) {
-          if (videoMap.value.has(item.receiver)) {
-            return;
-          }
-          videoMap.value.set(item.receiver, 1);
-          item.videoEl.addEventListener('loadedmetadata', () => {
-            console.log(
-              'loadedmetadata',
-              item.videoEl.videoWidth,
-              item.videoEl.videoHeight
-            );
-            window.$message.success(
-              `${item.videoEl.videoWidth}__${item.videoEl.videoHeight}`
-            );
-            showLoading.value = false;
-            // window.electronAPI.ipcRenderer.send(
-            //   'setChildWindowBounds',
-            //   windowId.value,
-            //   300,
-            //   400
-            //   // item.videoEl.videoWidth,
-            //   // item.videoEl.videoHeight
-            // );
-          });
-          videoWrapRef.value.appendChild(item.videoEl);
+      if (videoWrapRef.value) {
+        if (videoMap.value.has(item.receiver)) {
+          return;
         }
+        videoMap.value.set(item.receiver, 1);
+        item.videoEl.addEventListener('loadedmetadata', () => {
+          if (!videoWrapRef.value) return;
+          const rect = videoWrapRef.value.getBoundingClientRect();
+          const res = computeBox({
+            width: item.videoEl.videoWidth,
+            height: item.videoEl.videoHeight,
+            maxHeight: rect.height,
+            minHeight: 0,
+            maxWidth: rect.width,
+            minWidth: 0,
+          });
+
+          videoFullBox({
+            wrapSize: {
+              width: res.width,
+              height: res.height,
+            },
+            videoEl: item.videoEl,
+          });
+          if (res.width && res.height) {
+            window.electronAPI.ipcRenderer.send(
+              'setChildWindowBounds',
+              windowId.value,
+              res.width,
+              res.height + titlebarHeight.value
+            );
+          }
+          showLoading.value = false;
+        });
+        videoWrapRef.value.appendChild(item.videoEl);
       }
     });
     nextTick(() => {
@@ -667,11 +769,19 @@ function handleDebug() {
 
 <style lang="scss" scoped>
 .wrap {
-  .version {
-    text-align: center;
-    font-size: 20px;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  .test {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    background-color: red;
   }
   .remote-video {
+    width: 100vw;
+    height: 100vh;
     line-height: 0;
     cursor: none;
   }

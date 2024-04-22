@@ -1,5 +1,5 @@
 <template>
-  <NMessageProvider :max="3">
+  <NMessageProvider :max="5">
     <ContentCpt></ContentCpt>
   </NMessageProvider>
 </template>

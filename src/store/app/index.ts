@@ -11,12 +11,15 @@ export type AppRootState = {
     width: number;
     height: number;
   };
-  remoteDesk: {
-    sender: string;
-    startRemoteDesk: boolean;
-    isRemoteing?: boolean;
-    isClose?: boolean;
-  };
+  remoteDesk: Map<
+    string,
+    {
+      sender: string;
+      startRemoteDesk: boolean;
+      isRemoteing?: boolean;
+      isClose?: boolean;
+    }
+  >;
   playing: boolean;
   videoRatio: number;
   normalVolume: number;
@@ -79,12 +82,7 @@ export const useAppStore = defineStore('app', {
     return {
       version: '',
       workAreaSize: { width: 0, height: 0 },
-      remoteDesk: {
-        startRemoteDesk: false,
-        sender: '',
-        isRemoteing: false,
-        isClose: undefined,
-      },
+      remoteDesk: new Map(),
       playing: false,
       videoRatio: 16 / 9,
       videoControls: {

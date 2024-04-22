@@ -311,8 +311,15 @@ export const useWebsocket = () => {
     ws.socketIo.on(WsMsgTypeEnum.startRemoteDesk, (data: WsStartRemoteDesk) => {
       console.log('收到startRemoteDesk', data);
       if (data.data.receiver === mySocketId.value) {
-        appStore.remoteDesk.startRemoteDesk = true;
-        appStore.remoteDesk.sender = data.data.sender;
+        console.log('setttt-1', data.data.sender, data.data.receiver);
+        appStore.remoteDesk.set(data.data.sender, {
+          isClose: undefined,
+          isRemoteing: false,
+          startRemoteDesk: true,
+          sender: data.data.sender,
+        });
+        // appStore.remoteDesk.startRemoteDesk = true;
+        // appStore.remoteDesk.sender.push(data.data.sender);
       }
     });
 

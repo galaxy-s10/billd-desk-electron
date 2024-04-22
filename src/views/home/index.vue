@@ -34,7 +34,7 @@
           placeholder="请输入被控设备"
         />
         <n-button
-          v-if="!appStore.remoteDesk.isRemoteing"
+          v-if="!appStore.remoteDesk.get(receiverId)?.isRemoteing"
           @click="startRemote"
         >
           开始远程
@@ -61,7 +61,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
-import { useTip } from '@/hooks/use-tip';
+import { closeUseTip, useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { routerName } from '@/router';
@@ -89,6 +89,7 @@ const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
 const isControlOther = ref(false);
+const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
@@ -112,6 +113,14 @@ onMounted(() => {
       type: 'getMainWindowId',
     });
   }
+
+  window.electronAPI.ipcRenderer.on('workAreaSizeRes', (_event, source) => {
+    console.log('workAreaSizeRes', source);
+    appStore.workAreaSize.width = source.width;
+    appStore.workAreaSize.height = source.height;
+  });
+
+  window.electronAPI.ipcRenderer.send('workAreaSize');
 
   window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
     console.log('getMainWindowIdRes', source);
@@ -177,47 +186,50 @@ onMounted(() => {
   window.electronAPI.ipcRenderer.on('mouseRightClickRes', (_event, source) => {
     console.log('mouseRightClickRes', source);
   });
-  window.electronAPI.ipcRenderer.on(
-    'getScreenStreamRes',
-    async (_event, source) => {
-      console.log('收到getScreenStreamRes', source);
-      if (source.isErr) {
-        window.$message.error(source.msg);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            // @ts-ignore
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: source.stream.id,
-            },
-          },
-        });
-        anchorStream.value = stream;
-        updateWebRtcRemoteDeskConfig({
-          roomId: roomId.value,
-          anchorStream: anchorStream.value,
-        });
-        webRtcRemoteDesk.newWebRtc({
-          // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
-          // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
-          sender: mySocketId.value,
-          receiver: receiverId.value,
-          videoEl: createNullVideo(),
-        });
-        webRtcRemoteDesk.sendOffer({
-          sender: mySocketId.value,
-          receiver: receiverId.value,
-        });
-      } catch (err) {
-        console.log(err);
-      }
+  window.electronAPI.ipcRenderer.on('getScreenStreamRes', (_event, source) => {
+    console.log('收到getScreenStreamRes', source);
+    if (source.isErr) {
+      window.$message.error(source.msg);
+      return;
     }
-  );
+    chromeMediaSourceId.value = source.stream.id;
+    handleDesktopStream(source.stream.id);
+  });
 });
+
+async function handleDesktopStream(chromeMediaSourceId) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        // @ts-ignore
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId,
+        },
+      },
+    });
+    // setVideoTrackContentHints(stream, 'motion');
+    anchorStream.value = stream;
+    updateWebRtcRemoteDeskConfig({
+      roomId: roomId.value,
+      anchorStream: anchorStream.value,
+    });
+    webRtcRemoteDesk.newWebRtc({
+      // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
+      // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
+      sender: mySocketId.value,
+      receiver: receiverId.value,
+      videoEl: createNullVideo(),
+    });
+    webRtcRemoteDesk.sendOffer({
+      sender: mySocketId.value,
+      receiver: receiverId.value,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
 
 function handleCopy(str) {
   copyToClipBoard(str);
@@ -234,7 +246,11 @@ function startRemote() {
     type: 'createWindow',
     data: {
       route: routerName.webrtc,
-      query: { receiverId: receiverId.value },
+      query: {
+        receiverId: receiverId.value,
+        width: appStore.workAreaSize.width,
+        height: appStore.workAreaSize.height,
+      },
       x: 0,
       y: 0,
       useWorkAreaSize: true,
@@ -298,7 +314,8 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.isRemoteing,
+  // () => appStore.remoteDesk.isRemoteing,
+  () => appStore.remoteDesk.get(receiverId.value)?.isRemoteing,
   (newval) => {
     if (newval) {
       if (!isControlOther.value) {
@@ -311,8 +328,10 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.startRemoteDesk,
+  // () => appStore.remoteDesk.startRemoteDesk,
+  () => appStore.remoteDesk.get(receiverId.value),
   (newval) => {
+    console.log('newvalll', receiverId.value, newval?.startRemoteDesk);
     if (newval) {
       handleScreen();
     }
@@ -320,16 +339,23 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.sender,
+  // () => appStore.remoteDesk.sender,
+  () => appStore.remoteDesk,
   (newval) => {
-    if (newval !== '') {
-      receiverId.value = appStore.remoteDesk.sender;
-    }
+    console.log('kddd', newval, newval.size);
+    newval.forEach((item) => {
+      console.log('dddd', item);
+      receiverId.value = item.sender;
+    });
+  },
+  {
+    deep: true,
   }
 );
 
 watch(
-  () => appStore.remoteDesk.isClose,
+  // () => appStore.remoteDesk.isClose,
+  () => appStore.remoteDesk.get(receiverId.value)?.isClose,
   (newval) => {
     if (newval) {
       networkStore.removeRtc(receiverId.value);
@@ -338,6 +364,8 @@ watch(
         hiddenCancel: true,
         hiddenClose: true,
       }).catch();
+    } else {
+      closeUseTip();
     }
   }
 );

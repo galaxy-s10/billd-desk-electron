@@ -35,10 +35,16 @@ export const useWebRtcRemoteDesk = () => {
       receiver: string;
       videoEl: HTMLVideoElement;
     }) => {
-      return new WebRTCClass({
+      console.log({
         maxBitrate: currentMaxBitrate.value,
         maxFramerate: currentMaxFramerate.value,
         resolutionRatio: currentResolutionRatio.value,
+      });
+      return new WebRTCClass({
+        // maxBitrate: currentMaxBitrate.value,
+        // maxFramerate: currentMaxFramerate.value,
+        // resolutionRatio: currentResolutionRatio.value,
+        maxFramerate: 10,
         isSRS: false,
         roomId: roomId.value,
         videoEl: data.videoEl,

@@ -156,6 +156,7 @@ export class WebRTCClass {
 
   /** 设置最大帧率 */
   setMaxFramerate = async (maxFramerate: number) => {
+    console.log('设置最大帧率', this.localStream);
     if (this.localStream) {
       const res = await handleMaxFramerate({
         frameRate: maxFramerate,
@@ -421,7 +422,16 @@ export class WebRTCClass {
             msg: 'webrtc连接成功！',
             type: 'success',
           });
-          appStore.remoteDesk.isRemoteing = true;
+
+          console.log('setttt-2', this.sender, this.receiver);
+          appStore.remoteDesk.set(this.receiver, {
+            isClose: false,
+            isRemoteing: true,
+            startRemoteDesk: true,
+            sender: this.receiver,
+          });
+          // appStore.remoteDesk.isClose = false;
+          // appStore.remoteDesk.isRemoteing = true;
           console.log('sender', this.sender, 'receiver', this.receiver);
           this.update();
         }
@@ -480,6 +490,7 @@ export class WebRTCClass {
           if (this.maxBitrate !== -1) {
             this.setMaxBitrate(this.maxBitrate);
           }
+          console.log('maxFramerate2', this.maxFramerate);
           if (this.maxFramerate !== -1) {
             this.setMaxFramerate(this.maxFramerate);
           }
@@ -618,9 +629,16 @@ export class WebRTCClass {
       this.dataChannel = null;
       this.videoEl.remove();
       const appStore = useAppStore();
-      appStore.remoteDesk.isClose = true;
-      appStore.remoteDesk.isRemoteing = false;
-      appStore.remoteDesk.startRemoteDesk = false;
+      console.log('setttt-3', this.sender, this.receiver);
+      appStore.remoteDesk.set(this.receiver, {
+        isClose: true,
+        isRemoteing: false,
+        startRemoteDesk: false,
+        sender: this.receiver,
+      });
+      // appStore.remoteDesk.isClose = true;
+      // appStore.remoteDesk.isRemoteing = false;
+      // appStore.remoteDesk.startRemoteDesk = false;
     } catch (error) {
       this.prettierLog({ msg: '手动关闭webrtc连接失败', type: 'error' });
       console.error(error);

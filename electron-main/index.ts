@@ -348,9 +348,7 @@ function createWindow() {
   });
   ipcMain.on('setChildWindowBounds', (_event, windowId, width, height) => {
     console.log('收到setChildWindowBounds');
-    console.log(windowId, width, height);
     const childWindow = childWindowMap.get(Number(windowId));
-    console.log(childWindow);
     if (!childWindow) return;
     try {
       childWindow.setBounds({ width, height });
@@ -362,6 +360,29 @@ function createWindow() {
       console.log('setChildWindowBounds错误');
       console.log(error);
       childWindow.webContents.send('setChildWindowBoundsRes', {
+        isErr: true,
+        msg: '',
+      });
+    }
+  });
+
+  ipcMain.on('getChildWindowTitlebarHeight', (_event, windowId) => {
+    console.log('收到getChildWindowTitlebarHeight');
+    const childWindow = childWindowMap.get(Number(windowId));
+    if (!childWindow) return;
+    try {
+      const contentBounds = childWindow.getContentBounds();
+      const windowBounds = childWindow.getBounds();
+      const borderWidth = (windowBounds.width - contentBounds.width) / 2;
+      const titlebarHeight =
+        windowBounds.height - contentBounds.height - borderWidth;
+      childWindow.webContents.send('getChildWindowTitlebarHeightRes', {
+        titlebarHeight,
+      });
+    } catch (error) {
+      console.log('getChildWindowTitlebarHeight错误');
+      console.log(error);
+      childWindow.webContents.send('getChildWindowTitlebarHeightRes', {
         isErr: true,
         msg: '',
       });
@@ -432,8 +453,10 @@ function createWindow() {
   ipcMain.on('workAreaSize', (_event, data) => {
     console.log('electron收到workAreaSize', data);
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-
-    win?.webContents.send('workAreaSizeRes', { width, height });
+    win?.webContents.send('workAreaSizeRes', {
+      width,
+      height,
+    });
   });
 
   ipcMain.on('getWindowId', (_event, data) => {
