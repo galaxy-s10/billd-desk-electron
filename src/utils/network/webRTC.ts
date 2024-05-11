@@ -591,13 +591,14 @@ export class WebRTCClass {
       this.dataChannel = null;
       this.videoEl.remove();
       const appStore = useAppStore();
-      console.log('setttt-3', this.sender, this.receiver);
+      const networkStore = useNetworkStore();
       appStore.remoteDesk.set(this.receiver, {
         isClose: true,
         isRemoteing: false,
         startRemoteDesk: false,
         sender: this.receiver,
       });
+      networkStore.rtcMap.delete(this.receiver);
       // appStore.remoteDesk.isClose = true;
       // appStore.remoteDesk.isRemoteing = false;
       // appStore.remoteDesk.startRemoteDesk = false;

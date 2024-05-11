@@ -352,8 +352,8 @@ watch(
   // () => appStore.remoteDesk.startRemoteDesk,
   () => appStore.remoteDesk.get(receiverId.value),
   (newval) => {
-    console.log('newvalll', receiverId.value, newval?.startRemoteDesk);
-    if (newval) {
+    console.log('newvalnewval', newval);
+    if (newval && !newval.isRemoteing && !newval.isClose) {
       handleScreen();
     }
   }
@@ -363,9 +363,7 @@ watch(
   // () => appStore.remoteDesk.sender,
   () => appStore.remoteDesk,
   (newval) => {
-    console.log('kddd', newval, newval.size);
     newval.forEach((item) => {
-      console.log('dddd', item);
       receiverId.value = item.sender;
     });
   },
