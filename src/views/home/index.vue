@@ -6,6 +6,12 @@
         <div>version：{{ appStore.version }}</div>
         <div>wss：{{ WEBSOCKET_URL }}</div>
         <div>axios：{{ AXIOS_BASEURL }}</div>
+        <div @click="openToTarget(PROJECT_GITHUB)">
+          github：<span class="link">{{ PROJECT_GITHUB }}</span>
+        </div>
+        <div @click="openToTarget(WEB_DESK_URL)">
+          web端：<span class="link">{{ WEB_DESK_URL }}</span>
+        </div>
       </div>
       <n-input-group>
         <n-input-group-label>窗口id</n-input-group-label>
@@ -56,11 +62,16 @@
 </template>
 
 <script lang="ts" setup>
-import { copyToClipBoard, windowReload } from 'billd-utils';
+import { copyToClipBoard, openToTarget, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
+import {
+  AXIOS_BASEURL,
+  PROJECT_GITHUB,
+  WEBSOCKET_URL,
+  WEB_DESK_URL,
+} from '@/constant';
 import { closeUseTip, useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
@@ -72,7 +83,11 @@ import {
   WsMsgTypeEnum,
   WsRemoteDeskBehaviorType,
 } from '@/types/websocket';
-import { createNullVideo } from '@/utils';
+import {
+  createNullVideo,
+  handlConstraints,
+  setVideoTrackContentHints,
+} from '@/utils';
 
 const route = useRoute();
 const { initWs } = useWebsocket();
@@ -209,6 +224,12 @@ async function handleDesktopStream(chromeMediaSourceId) {
         },
       },
     });
+    await handlConstraints({
+      frameRate: 30,
+      height: 1440,
+      stream,
+    });
+    setVideoTrackContentHints(stream, 'detail');
     // setVideoTrackContentHints(stream, 'motion');
     anchorStream.value = stream;
     updateWebRtcRemoteDeskConfig({
@@ -423,4 +444,9 @@ function mouseScrollRight(amount) {
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.link {
+  cursor: pointer;
+  color: $theme-color-gold;
+}
+</style>
