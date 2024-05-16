@@ -449,6 +449,10 @@ function createWindow() {
     console.log('electron收到getMainWindowId', data);
     win?.webContents.send('getMainWindowIdRes', { id: win.id });
   });
+  ipcMain.on('mainWindowSetAlwaysOnTop', (_event, data) => {
+    console.log('electron收到mainWindowSetAlwaysOnTop', data);
+    win?.setAlwaysOnTop(data.data.flag);
+  });
 
   ipcMain.on('workAreaSize', (_event, data) => {
     console.log('electron收到workAreaSize', data);

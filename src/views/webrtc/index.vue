@@ -129,6 +129,11 @@ watch(
           roomId: roomId.value,
           sender: mySocketId.value,
           receiver: receiverId.value,
+          maxBitrate: 111,
+          maxFramerate: 111,
+          resolutionRatio: 111,
+          videoContentHint: '',
+          audioContentHint: '',
         },
       });
     }

@@ -317,6 +317,11 @@ export const useWebsocket = () => {
           isRemoteing: false,
           startRemoteDesk: true,
           sender: data.data.sender,
+          maxBitrate: data.data.maxBitrate,
+          maxFramerate: data.data.maxFramerate,
+          resolutionRatio: data.data.resolutionRatio,
+          videoContentHint: data.data.videoContentHint,
+          audioContentHint: data.data.audioContentHint,
         });
         // appStore.remoteDesk.startRemoteDesk = true;
         // appStore.remoteDesk.sender.push(data.data.sender);

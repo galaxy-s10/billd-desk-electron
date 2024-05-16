@@ -6,10 +6,10 @@
         <div>version：{{ appStore.version }}</div>
         <div>wss：{{ WEBSOCKET_URL }}</div>
         <div>axios：{{ AXIOS_BASEURL }}</div>
-        <div @click="openToTarget(PROJECT_GITHUB)">
+        <div>
           github：<span class="link">{{ PROJECT_GITHUB }}</span>
         </div>
-        <div @click="openToTarget(WEB_DESK_URL)">
+        <div>
           web端：<span class="link">{{ WEB_DESK_URL }}</span>
         </div>
       </div>
@@ -55,6 +55,13 @@
       </n-input-group>
     </div>
     <div>
+      <span>码率：{{ maxBitrate }}，</span>
+      <span>帧率：{{ maxFramerate }}，</span>
+      <span>分辨率：{{ resolutionRatio }}，</span>
+      <span>视频内容：{{ videoContentHint }}，</span>
+      <span>音频内容：{{ audioContentHint }}</span>
+    </div>
+    <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
     </div>
@@ -62,7 +69,7 @@
 </template>
 
 <script lang="ts" setup>
-import { copyToClipBoard, openToTarget, windowReload } from 'billd-utils';
+import { copyToClipBoard, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -80,14 +87,21 @@ import { useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
 import {
   RemoteDeskBehaviorEnum,
+  WsChangeAudioContentHintType,
+  WsChangeMaxBitrateType,
+  WsChangeMaxFramerateType,
+  WsChangeResolutionRatioType,
+  WsChangeVideoContentHintType,
   WsMsgTypeEnum,
   WsRemoteDeskBehaviorType,
 } from '@/types/websocket';
 import {
   createNullVideo,
   handlConstraints,
+  setAudioTrackContentHints,
   setVideoTrackContentHints,
 } from '@/utils';
+import { WebRTCClass } from '@/utils/network/webRTC';
 
 const route = useRoute();
 const { initWs } = useWebsocket();
@@ -97,6 +111,7 @@ const networkStore = useNetworkStore();
 const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
   useWebRtcRemoteDesk();
 
+const rtc = ref<WebRTCClass>();
 const windowId = ref();
 const num = '123456';
 const roomId = ref(num);
@@ -108,6 +123,12 @@ const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
+
+const maxFramerate = ref(60);
+const maxBitrate = ref(2000);
+const resolutionRatio = ref(1080);
+const videoContentHint = ref('detail');
+const audioContentHint = ref('');
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -224,19 +245,21 @@ async function handleDesktopStream(chromeMediaSourceId) {
         },
       },
     });
-    await handlConstraints({
-      frameRate: 30,
-      height: 1440,
-      stream,
-    });
-    setVideoTrackContentHints(stream, 'detail');
-    // setVideoTrackContentHints(stream, 'motion');
     anchorStream.value = stream;
+    await handlConstraints({
+      frameRate: maxFramerate.value,
+      height: resolutionRatio.value,
+      stream: anchorStream.value,
+    });
+    // @ts-ignore
+    setVideoTrackContentHints(anchorStream.value, videoContentHint.value);
+    // @ts-ignore
+    setAudioTrackContentHints(anchorStream.value, audioContentHint.value);
     updateWebRtcRemoteDeskConfig({
       roomId: roomId.value,
       anchorStream: anchorStream.value,
     });
-    webRtcRemoteDesk.newWebRtc({
+    rtc.value = webRtcRemoteDesk.newWebRtc({
       // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
       // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
       sender: mySocketId.value,
@@ -292,41 +315,86 @@ watch(
       ioFlag.value = true;
       const setting = anchorStream.value?.getVideoTracks()[0].getSettings();
       newval.onmessage = (event) => {
+        console.log(event.data, 'dddd');
         const jsondata: {
           msgType: WsMsgTypeEnum;
           requestId: string;
-          data: WsRemoteDeskBehaviorType['data'];
+          data: any;
         } = JSON.parse(event.data);
-        const { data } = jsondata;
-        if (setting) {
-          const x = (setting.width || 0) * (data.x / 1000);
-          const y = (setting.height || 0) * (data.y / 1000);
-          if (data.type === RemoteDeskBehaviorEnum.setPosition) {
-            mouseSetPosition(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.mouseMove) {
-            mouseMove(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.mouseDrag) {
-            mouseDrag(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.leftClick) {
-            mouseLeftClick(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.rightClick) {
-            mouseRightClick(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.doubleClick) {
-            mouseDoubleClick(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.pressButtonLeft) {
-            mousePressButtonLeft(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.releaseButtonLeft) {
-            mouseReleaseButtonLeft(x, y);
-          } else if (data.type === RemoteDeskBehaviorEnum.keyboardType) {
-            keyboardType(data.keyboardtype);
-          } else if (data.type === RemoteDeskBehaviorEnum.scrollDown) {
-            mouseScrollDown(data.amount);
-          } else if (data.type === RemoteDeskBehaviorEnum.scrollUp) {
-            mouseScrollUp(data.amount);
-          } else if (data.type === RemoteDeskBehaviorEnum.scrollLeft) {
-            mouseScrollLeft(data.amount);
-          } else if (data.type === RemoteDeskBehaviorEnum.scrollRight) {
-            mouseScrollRight(data.amount);
+        const { msgType } = jsondata;
+        if (msgType === WsMsgTypeEnum.changeMaxBitrate) {
+          const { data }: { data: WsChangeMaxBitrateType['data'] } = jsondata;
+          maxBitrate.value = data.val;
+          rtc.value?.setMaxBitrate(data.val);
+        } else if (msgType === WsMsgTypeEnum.changeMaxFramerate) {
+          const { data }: { data: WsChangeMaxFramerateType['data'] } = jsondata;
+          if (anchorStream.value) {
+            maxFramerate.value = data.val;
+            handlConstraints({
+              frameRate: data.val,
+              height: resolutionRatio.value,
+              stream: anchorStream.value,
+            });
+          }
+        } else if (msgType === WsMsgTypeEnum.changeResolutionRatio) {
+          const { data }: { data: WsChangeResolutionRatioType['data'] } =
+            jsondata;
+          if (anchorStream.value) {
+            resolutionRatio.value = data.val;
+            handlConstraints({
+              frameRate: maxFramerate.value,
+              height: data.val,
+              stream: anchorStream.value,
+            });
+          }
+        } else if (msgType === WsMsgTypeEnum.changeVideoContentHint) {
+          const { data }: { data: WsChangeVideoContentHintType['data'] } =
+            jsondata;
+          if (anchorStream.value) {
+            videoContentHint.value = data.val;
+            // @ts-ignore
+            setVideoTrackContentHints(anchorStream.value, data.val);
+          }
+        } else if (msgType === WsMsgTypeEnum.changeAudioContentHint) {
+          const { data }: { data: WsChangeAudioContentHintType['data'] } =
+            jsondata;
+          if (anchorStream.value) {
+            audioContentHint.value = data.val;
+            // @ts-ignore
+            setAudioTrackContentHints(anchorStream.value, data.val);
+          }
+        } else if (msgType === WsMsgTypeEnum.remoteDeskBehavior) {
+          const { data }: { data: WsRemoteDeskBehaviorType['data'] } = jsondata;
+          if (setting) {
+            const x = (setting.width || 0) * (data.x / 1000);
+            const y = (setting.height || 0) * (data.y / 1000);
+            if (data.type === RemoteDeskBehaviorEnum.setPosition) {
+              mouseSetPosition(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.mouseMove) {
+              mouseMove(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.mouseDrag) {
+              mouseDrag(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.leftClick) {
+              mouseLeftClick(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.rightClick) {
+              mouseRightClick(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.doubleClick) {
+              mouseDoubleClick(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.pressButtonLeft) {
+              mousePressButtonLeft(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.releaseButtonLeft) {
+              mouseReleaseButtonLeft(x, y);
+            } else if (data.type === RemoteDeskBehaviorEnum.keyboardType) {
+              keyboardType(data.keyboardtype);
+            } else if (data.type === RemoteDeskBehaviorEnum.scrollDown) {
+              mouseScrollDown(data.amount);
+            } else if (data.type === RemoteDeskBehaviorEnum.scrollUp) {
+              mouseScrollUp(data.amount);
+            } else if (data.type === RemoteDeskBehaviorEnum.scrollLeft) {
+              mouseScrollLeft(data.amount);
+            } else if (data.type === RemoteDeskBehaviorEnum.scrollRight) {
+              mouseScrollRight(data.amount);
+            }
           }
         }
       };
@@ -341,9 +409,11 @@ watch(
     if (newval) {
       if (!isControlOther.value) {
         handleMoveScreenRightBottom();
+        handleMainWindowSetAlwaysOnTop(true);
       }
     } else {
       handleClose();
+      handleMainWindowSetAlwaysOnTop(false);
     }
   }
 );
@@ -365,6 +435,11 @@ watch(
   (newval) => {
     newval.forEach((item) => {
       receiverId.value = item.sender;
+      maxBitrate.value = item.maxBitrate;
+      maxFramerate.value = item.maxFramerate;
+      resolutionRatio.value = item.resolutionRatio;
+      videoContentHint.value = item.videoContentHint;
+      audioContentHint.value = item.audioContentHint;
     });
   },
   {
@@ -392,6 +467,13 @@ watch(
 /** 将程序主窗口移动到屏幕右下角 */
 function handleMoveScreenRightBottom() {
   window.electronAPI.ipcRenderer.send('handleMoveScreenRightBottom');
+}
+/** 将程序主窗口指定 */
+function handleMainWindowSetAlwaysOnTop(flag: boolean) {
+  window.electronAPI.ipcRenderer.send('mainWindowSetAlwaysOnTop', {
+    type: 'mainWindowSetAlwaysOnTop',
+    data: { flag },
+  });
 }
 
 function handleScreen() {

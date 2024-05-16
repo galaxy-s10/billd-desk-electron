@@ -79,6 +79,13 @@ export enum WsMsgTypeEnum {
   nativeWebRtcCandidate = 'nativeWebRtcCandidate',
 
   msrBlob = 'msrBlob',
+  batchSendOffer = 'batchSendOffer',
+
+  changeMaxBitrate = 'changeMaxBitrate',
+  changeMaxFramerate = 'changeMaxFramerate',
+  changeResolutionRatio = 'changeResolutionRatio',
+  changeVideoContentHint = 'changeVideoContentHint',
+  changeAudioContentHint = 'changeAudioContentHint',
 }
 
 export interface IWsFormat<T> {
@@ -94,6 +101,31 @@ export interface IWsFormat<T> {
   user_token?: string;
   data: T;
 }
+
+export type WsChangeMaxBitrateType = IWsFormat<{
+  live_room_id: number;
+  val: number;
+}>;
+
+export type WsChangeMaxFramerateType = IWsFormat<{
+  live_room_id: number;
+  val: number;
+}>;
+
+export type WsChangeResolutionRatioType = IWsFormat<{
+  live_room_id: number;
+  val: number;
+}>;
+
+export type WsChangeVideoContentHintType = IWsFormat<{
+  live_room_id: number;
+  val: string;
+}>;
+
+export type WsChangeAudioContentHintType = IWsFormat<{
+  live_room_id: number;
+  val: string;
+}>;
 
 export type WsUpdateJoinInfoType = IWsFormat<{
   live_room_id: number;
@@ -265,6 +297,11 @@ export type WsStartRemoteDesk = IWsFormat<{
   sender: string;
   receiver: string;
   roomId: string;
+  maxBitrate: number;
+  maxFramerate: number;
+  resolutionRatio: number;
+  audioContentHint: string;
+  videoContentHint: string;
 }>;
 
 export type WsOfferType = IWsFormat<{
