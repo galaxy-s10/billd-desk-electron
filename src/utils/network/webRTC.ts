@@ -403,8 +403,6 @@ export class WebRTCClass {
           //   videoContentHint: '',
           //   audioContentHint: '',
           // });
-          // appStore.remoteDesk.isClose = false;
-          // appStore.remoteDesk.isRemoteing = true;
           console.log('sender', this.sender, 'receiver', this.receiver);
           this.update();
         }
@@ -602,9 +600,9 @@ export class WebRTCClass {
         isRemoteing: false,
         startRemoteDesk: false,
         sender: this.receiver,
-        maxBitrate: 11,
-        maxFramerate: 11,
-        resolutionRatio: 11,
+        maxBitrate: -1,
+        maxFramerate: -1,
+        resolutionRatio: -1,
         videoContentHint: '',
         audioContentHint: '',
       });

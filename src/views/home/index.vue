@@ -7,10 +7,20 @@
         <div>wss：{{ WEBSOCKET_URL }}</div>
         <div>axios：{{ AXIOS_BASEURL }}</div>
         <div>
-          github：<span class="link">{{ PROJECT_GITHUB }}</span>
+          github：<span
+            class="link"
+            @click="handleCopy(PROJECT_GITHUB)"
+          >
+            {{ PROJECT_GITHUB }}
+          </span>
         </div>
         <div>
-          web端：<span class="link">{{ WEB_DESK_URL }}</span>
+          web端：<span
+            class="link"
+            @click="handleCopy(WEB_DESK_URL)"
+          >
+            {{ WEB_DESK_URL }}
+          </span>
         </div>
       </div>
       <n-input-group>
@@ -136,6 +146,7 @@ onUnmounted(() => {
 });
 
 onMounted(() => {
+  handleMainWindowSetAlwaysOnTop(true);
   initWs({
     roomId: roomId.value,
     isAnchor: false,
@@ -403,26 +414,21 @@ watch(
 );
 
 watch(
-  // () => appStore.remoteDesk.isRemoteing,
   () => appStore.remoteDesk.get(receiverId.value)?.isRemoteing,
   (newval) => {
     if (newval) {
       if (!isControlOther.value) {
         handleMoveScreenRightBottom();
-        handleMainWindowSetAlwaysOnTop(true);
       }
     } else {
       handleClose();
-      handleMainWindowSetAlwaysOnTop(false);
     }
   }
 );
 
 watch(
-  // () => appStore.remoteDesk.startRemoteDesk,
   () => appStore.remoteDesk.get(receiverId.value),
   (newval) => {
-    console.log('newvalnewval', newval);
     if (newval && !newval.isRemoteing && !newval.isClose) {
       handleScreen();
     }
@@ -430,7 +436,6 @@ watch(
 );
 
 watch(
-  // () => appStore.remoteDesk.sender,
   () => appStore.remoteDesk,
   (newval) => {
     newval.forEach((item) => {
@@ -448,7 +453,6 @@ watch(
 );
 
 watch(
-  // () => appStore.remoteDesk.isClose,
   () => appStore.remoteDesk.get(receiverId.value)?.isClose,
   (newval) => {
     if (newval) {
