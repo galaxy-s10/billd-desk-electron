@@ -11,6 +11,8 @@ declare global {
   interface Window {
     electronAPI: ElectronAPI;
     $message: import('naive-ui/es/message/src/MessageProvider').MessageApiInjection;
+    $notification: import('naive-ui/es/notification/index').NotificationProviderInst;
+    // $notification: import('naive-ui/es/notification/index').NotificationApiInjection;
     TXLivePusher: any;
   }
 }

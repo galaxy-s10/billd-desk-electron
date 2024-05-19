@@ -78,7 +78,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { AXIOS_BASEURL, NODE_ENV, WEBSOCKET_URL } from '@/constant';
-import { closeUseTip, useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useAppStore } from '@/store/app';
@@ -292,8 +291,7 @@ async function handleDesktopStream(chromeMediaSourceId) {
 }
 
 function handleMouseWheel(e: WheelEvent) {
-  // if (!appStore.remoteDesk.isRemoteing) {
-  if (!appStore.remoteDesk.get(receiverId.value)?.isRemoteing) {
+  if (!appStore.remoteDesk.size) {
     return;
   }
   // console.log('handleMouseWheel', e);
@@ -417,45 +415,38 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.get(receiverId.value)?.isRemoteing,
+  () => appStore.remoteDesk.size,
   (newval) => {
-    if (!newval) {
+    if (newval) {
+      if (!anchorStream.value) {
+        handleScreen();
+      }
+    } else {
       handleClose();
     }
   }
 );
 
-watch(
-  () => appStore.remoteDesk.get(receiverId.value)?.startRemoteDesk,
-  (newval) => {
-    if (newval) {
-      handleScreen();
-    }
-  }
-);
-
-watch(
-  () => appStore.remoteDesk.get(receiverId.value)?.isClose,
-  (newval) => {
-    if (newval) {
-      networkStore.removeRtc(receiverId.value);
-      useTip({
-        content: '远程连接断开',
-        hiddenCancel: true,
-        hiddenClose: true,
-      })
-        .catch()
-        .then(() => {
-          window.electronAPI.ipcRenderer.send(
-            'childWindowClose',
-            windowId.value
-          );
-        });
-    } else {
-      closeUseTip();
-    }
-  }
-);
+// watch(
+//   () => appStore.remoteDesk.get(receiverId.value)?.isClose,
+//   (newval) => {
+//     if (newval) {
+//       networkStore.removeRtc(receiverId.value);
+//       useTip({
+//         content: '远程连接断开',
+//         hiddenCancel: true,
+//         hiddenClose: true,
+//       })
+//         .catch()
+//         .then(() => {
+//           window.electronAPI.ipcRenderer.send(
+//             'childWindowClose',
+//             windowId.value
+//           );
+//         });
+//     }
+//   }
+// );
 
 watch(
   () => networkStore.rtcMap,

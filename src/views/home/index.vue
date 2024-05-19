@@ -50,17 +50,17 @@
           placeholder="请输入被控设备"
         />
         <n-button
-          v-if="!appStore.remoteDesk.get(receiverId)?.isRemoteing"
+          v-if="!appStore.remoteDesk.size"
           @click="startRemote"
         >
           开始远程
         </n-button>
         <n-button
           type="error"
-          @click="handleClose"
+          @click="handleCloseAll"
           v-else
         >
-          结束远程
+          断开所有远程
         </n-button>
       </n-input-group>
     </div>
@@ -74,6 +74,37 @@
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
+    </div>
+    <div class="list">
+      <div
+        class="item"
+        v-for="(item, key) in networkStore.rtcMap"
+        :key="key"
+      >
+        <span>rtc-id：{{ item[1].sender }}，{{ item[1].receiver }}，</span>
+        <span
+          class="del"
+          @click="handleDel(item[1].receiver)"
+        >
+          --
+        </span>
+      </div>
+    </div>
+    <hr />
+    <div class="list">
+      <div
+        class="item"
+        v-for="(item, key) in appStore.remoteDesk"
+        :key="key"
+      >
+        <span>desk-id：{{ item[1].sender }}，</span>
+        <span
+          class="del"
+          @click="handleDel(item[1].sender)"
+        >
+          断开
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -89,7 +120,6 @@ import {
   WEBSOCKET_URL,
   WEB_DESK_URL,
 } from '@/constant';
-import { closeUseTip, useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { routerName } from '@/router';
@@ -128,6 +158,7 @@ const roomId = ref(num);
 const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
+/** 是否控制别人 */
 const isControlOther = ref(false);
 const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
@@ -142,7 +173,7 @@ const audioContentHint = ref('');
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
-  handleClose();
+  handleCloseAll();
 });
 
 onMounted(() => {
@@ -257,6 +288,15 @@ async function handleDesktopStream(chromeMediaSourceId) {
       },
     });
     anchorStream.value = stream;
+    // handleRTC();
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function handleRTC(receiver) {
+  if (!anchorStream.value) return;
+  try {
     await handlConstraints({
       frameRate: maxFramerate.value,
       height: resolutionRatio.value,
@@ -274,12 +314,12 @@ async function handleDesktopStream(chromeMediaSourceId) {
       // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
       // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
       sender: mySocketId.value,
-      receiver: receiverId.value,
+      receiver,
       videoEl: createNullVideo(),
     });
     webRtcRemoteDesk.sendOffer({
       sender: mySocketId.value,
-      receiver: receiverId.value,
+      receiver,
     });
   } catch (err) {
     console.log(err);
@@ -313,9 +353,19 @@ function startRemote() {
   });
 }
 
-function handleClose() {
-  networkStore.removeRtc(receiverId.value);
-  ioFlag.value = false;
+function handleCloseAll() {
+  anchorStream.value = undefined;
+  appStore.remoteDesk.forEach((item) => {
+    networkStore.removeRtc(item.sender);
+  });
+  if (!appStore.remoteDesk.size) {
+    ioFlag.value = false;
+  }
+}
+
+function handleDel(sender) {
+  console.log('handleDel', sender);
+  networkStore.removeRtc(sender);
 }
 
 watch(
@@ -326,7 +376,6 @@ watch(
       ioFlag.value = true;
       const setting = anchorStream.value?.getVideoTracks()[0].getSettings();
       newval.onmessage = (event) => {
-        console.log(event.data, 'dddd');
         const jsondata: {
           msgType: WsMsgTypeEnum;
           requestId: string;
@@ -414,23 +463,40 @@ watch(
 );
 
 watch(
-  () => appStore.remoteDesk.get(receiverId.value)?.isRemoteing,
+  () => anchorStream.value,
   (newval) => {
     if (newval) {
-      if (!isControlOther.value) {
-        handleMoveScreenRightBottom();
-      }
-    } else {
-      handleClose();
+      appStore.remoteDesk.forEach((item) => {
+        if (!item.isClose) {
+          handleRTC(item.sender);
+        }
+      });
     }
   }
 );
 
 watch(
-  () => appStore.remoteDesk.get(receiverId.value),
+  () => appStore.remoteDesk.size,
   (newval) => {
-    if (newval && !newval.isRemoteing && !newval.isClose) {
-      handleScreen();
+    if (newval) {
+      if (!isControlOther.value) {
+        handleMoveScreenRightBottom();
+      }
+      if (!anchorStream.value) {
+        handleScreen();
+      } else {
+        appStore.remoteDesk.forEach((item) => {
+          handleRTC(item.sender);
+          // receiverId.value = item.sender;
+          // maxBitrate.value = item.maxBitrate;
+          // maxFramerate.value = item.maxFramerate;
+          // resolutionRatio.value = item.resolutionRatio;
+          // videoContentHint.value = item.videoContentHint;
+          // audioContentHint.value = item.audioContentHint;
+        });
+      }
+    } else {
+      handleCloseAll();
     }
   }
 );
@@ -439,6 +505,14 @@ watch(
   () => appStore.remoteDesk,
   (newval) => {
     newval.forEach((item) => {
+      if (item.isClose) {
+        window.$notification.warning({
+          content: `${item.sender}远程连接断开`,
+          duration: 2000,
+        });
+        appStore.remoteDesk.delete(item.sender);
+        return;
+      }
       receiverId.value = item.sender;
       maxBitrate.value = item.maxBitrate;
       maxFramerate.value = item.maxFramerate;
@@ -449,22 +523,6 @@ watch(
   },
   {
     deep: true,
-  }
-);
-
-watch(
-  () => appStore.remoteDesk.get(receiverId.value)?.isClose,
-  (newval) => {
-    if (newval) {
-      networkStore.removeRtc(receiverId.value);
-      useTip({
-        content: '远程连接断开',
-        hiddenCancel: true,
-        hiddenClose: true,
-      }).catch();
-    } else {
-      closeUseTip();
-    }
   }
 );
 
@@ -532,5 +590,13 @@ function mouseScrollRight(amount) {
 .link {
   cursor: pointer;
   color: $theme-color-gold;
+}
+.list {
+  .item {
+    .del {
+      color: red;
+      cursor: pointer;
+    }
+  }
 }
 </style>

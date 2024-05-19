@@ -15,9 +15,7 @@ export type AppRootState = {
     string,
     {
       sender: string;
-      startRemoteDesk: boolean;
-      isRemoteing?: boolean;
-      isClose?: boolean;
+      isClose: boolean;
       maxBitrate: number;
       maxFramerate: number;
       resolutionRatio: number;

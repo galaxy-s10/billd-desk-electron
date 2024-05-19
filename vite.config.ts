@@ -1,5 +1,6 @@
 import vue from '@vitejs/plugin-vue';
 import BilldHtmlWebpackPlugin from 'billd-html-webpack-plugin';
+import AutoImport from 'unplugin-auto-import/vite';
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
@@ -73,6 +74,13 @@ export default defineConfig(({ command, mode }) => {
       //   failOnWarning: false,
       //   cache: false,
       // }),
+      AutoImport({
+        imports: [
+          {
+            'naive-ui': ['useMessage', 'useNotification'],
+          },
+        ],
+      }),
       Components({
         resolvers: [NaiveUiResolver()],
       }),

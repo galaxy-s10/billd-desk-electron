@@ -31,16 +31,9 @@ export const useNetworkStore = defineStore('network', {
       }
       this.wsMap.delete(roomId);
     },
-    updateRtcMap(socketId: string, arg) {
-      const val = this.rtcMap.get(socketId);
-      if (val) {
-        this.rtcMap.set(socketId, { ...val, ...arg });
-      } else {
-        this.rtcMap.set(socketId, arg);
-      }
-    },
     removeRtc(socketId: string) {
       const old = this.rtcMap.get(socketId);
+      console.log(old, 'old');
       if (old) {
         old.close();
       }
