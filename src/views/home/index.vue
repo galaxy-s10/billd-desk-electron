@@ -78,22 +78,6 @@
     <div class="list">
       <div
         class="item"
-        v-for="(item, key) in networkStore.rtcMap"
-        :key="key"
-      >
-        <span>rtc-id：{{ item[1].sender }}，{{ item[1].receiver }}，</span>
-        <span
-          class="del"
-          @click="handleDel(item[1].receiver)"
-        >
-          --
-        </span>
-      </div>
-    </div>
-    <hr />
-    <div class="list">
-      <div
-        class="item"
         v-for="(item, key) in appStore.remoteDesk"
         :key="key"
       >
