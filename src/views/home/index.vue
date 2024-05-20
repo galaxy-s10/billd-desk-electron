@@ -132,8 +132,10 @@ import {
   WsChangeMaxFramerateType,
   WsChangeResolutionRatioType,
   WsChangeVideoContentHintType,
+  WsConnectStatusEnum,
   WsMsgTypeEnum,
   WsRemoteDeskBehaviorType,
+  WsStartRemoteDesk,
 } from '@/types/websocket';
 import {
   createNullVideo,
@@ -144,7 +146,7 @@ import {
 import { WebRTCClass } from '@/utils/network/webRTC';
 
 const route = useRoute();
-const { initWs } = useWebsocket();
+const { initWs, connectStatus } = useWebsocket();
 const appStore = useAppStore();
 const networkStore = useNetworkStore();
 
@@ -157,7 +159,6 @@ const num = '123456';
 const roomId = ref(num);
 const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
-const ioFlag = ref(false);
 /** 是否控制别人 */
 const isControlOther = ref(false);
 const chromeMediaSourceId = ref();
@@ -275,6 +276,37 @@ onMounted(() => {
   });
 });
 
+watch(
+  () => connectStatus.value,
+  (newval) => {
+    console.log('connectStatus', newval);
+    if (newval === WsConnectStatusEnum.connect) {
+      handleWsMsg();
+    }
+  }
+);
+
+function handleWsMsg() {
+  const ws = networkStore.wsMap.get(roomId.value);
+  if (!ws?.socketIo) return;
+  // 收到startRemoteDesk
+  ws.socketIo.on(WsMsgTypeEnum.startRemoteDesk, (data: WsStartRemoteDesk) => {
+    console.log('收到startRemoteDesk', JSON.stringify(data));
+    if (data.data.receiver === mySocketId.value) {
+      appStore.remoteDesk.set(data.data.sender, {
+        sender: data.data.sender,
+        isClose: false,
+        maxBitrate: data.data.maxBitrate,
+        maxFramerate: data.data.maxFramerate,
+        resolutionRatio: data.data.resolutionRatio,
+        videoContentHint: data.data.videoContentHint,
+        audioContentHint: data.data.audioContentHint,
+      });
+      handleRTC(data.data.sender);
+    }
+  });
+}
+
 async function handleDesktopStream(chromeMediaSourceId) {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -358,9 +390,6 @@ function handleCloseAll() {
   appStore.remoteDesk.forEach((item) => {
     networkStore.removeRtc(item.sender);
   });
-  if (!appStore.remoteDesk.size) {
-    ioFlag.value = false;
-  }
 }
 
 function handleDel(sender) {
@@ -369,13 +398,12 @@ function handleDel(sender) {
 }
 
 watch(
-  () => networkStore.rtcMap.get(receiverId.value)?.cbDataChannel,
+  () => networkStore.rtcMap,
   (newval) => {
-    if (newval) {
-      if (ioFlag.value) return;
-      ioFlag.value = true;
+    newval.forEach((item) => {
+      if (!item.cbDataChannel) return;
       const setting = anchorStream.value?.getVideoTracks()[0].getSettings();
-      newval.onmessage = (event) => {
+      item.cbDataChannel.onmessage = (event) => {
         const jsondata: {
           msgType: WsMsgTypeEnum;
           requestId: string;
@@ -458,7 +486,11 @@ watch(
           }
         }
       };
-    }
+    });
+  },
+  {
+    immediate: true,
+    deep: true,
   }
 );
 
@@ -468,6 +500,7 @@ watch(
     if (newval) {
       appStore.remoteDesk.forEach((item) => {
         if (!item.isClose) {
+          console.log('handleRTChandleRTC');
           handleRTC(item.sender);
         }
       });
@@ -484,16 +517,6 @@ watch(
       }
       if (!anchorStream.value) {
         handleScreen();
-      } else {
-        appStore.remoteDesk.forEach((item) => {
-          handleRTC(item.sender);
-          // receiverId.value = item.sender;
-          // maxBitrate.value = item.maxBitrate;
-          // maxFramerate.value = item.maxFramerate;
-          // resolutionRatio.value = item.resolutionRatio;
-          // videoContentHint.value = item.videoContentHint;
-          // audioContentHint.value = item.audioContentHint;
-        });
       }
     } else {
       handleCloseAll();

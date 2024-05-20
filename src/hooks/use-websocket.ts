@@ -42,7 +42,6 @@ import {
   WsRemoteDeskBehaviorType,
   WsRoomLivingType,
   WsStartLiveType,
-  WsStartRemoteDesk,
   WsUpdateJoinInfoType,
 } from '@/types/websocket';
 import { createNullVideo, handleUserMedia } from '@/utils';
@@ -308,20 +307,20 @@ export const useWebsocket = () => {
     });
 
     // 收到startRemoteDesk
-    ws.socketIo.on(WsMsgTypeEnum.startRemoteDesk, (data: WsStartRemoteDesk) => {
-      console.log('收到startRemoteDesk', JSON.stringify(data));
-      if (data.data.receiver === mySocketId.value) {
-        appStore.remoteDesk.set(data.data.sender, {
-          sender: data.data.sender,
-          isClose: false,
-          maxBitrate: data.data.maxBitrate,
-          maxFramerate: data.data.maxFramerate,
-          resolutionRatio: data.data.resolutionRatio,
-          videoContentHint: data.data.videoContentHint,
-          audioContentHint: data.data.audioContentHint,
-        });
-      }
-    });
+    // ws.socketIo.on(WsMsgTypeEnum.startRemoteDesk, (data: WsStartRemoteDesk) => {
+    //   console.log('收到startRemoteDesk', JSON.stringify(data));
+    //   if (data.data.receiver === mySocketId.value) {
+    //     appStore.remoteDesk.set(data.data.sender, {
+    //       sender: data.data.sender,
+    //       isClose: false,
+    //       maxBitrate: data.data.maxBitrate,
+    //       maxFramerate: data.data.maxFramerate,
+    //       resolutionRatio: data.data.resolutionRatio,
+    //       videoContentHint: data.data.videoContentHint,
+    //       audioContentHint: data.data.audioContentHint,
+    //     });
+    //   }
+    // });
 
     // 收到srsOffer
     ws.socketIo.on(WsMsgTypeEnum.srsOffer, (data: WsOfferType['data']) => {
