@@ -49,20 +49,18 @@
           :style="{ width: '200px' }"
           placeholder="请输入被控设备"
         />
-        <n-button
-          v-if="!appStore.remoteDesk.size"
-          @click="startRemote"
-        >
-          开始远程
-        </n-button>
+        <n-button @click="startRemote">开始远程</n-button>
+      </n-input-group>
+      <div v-if="!appStore.remoteDesk.size">等待被控</div>
+      <div v-else>
+        正在被{{ appStore.remoteDesk.size }}个用户控制
         <n-button
           type="error"
           @click="handleCloseAll"
-          v-else
         >
           断开所有远程
         </n-button>
-      </n-input-group>
+      </div>
     </div>
     <div>
       <span>码率：{{ maxBitrate }}，</span>
@@ -81,7 +79,7 @@
         v-for="(item, key) in appStore.remoteDesk"
         :key="key"
       >
-        <span>desk-id：{{ item[1].sender }}，</span>
+        <span>socketid：{{ item[1].sender }}，</span>
         <span
           class="del"
           @click="handleDel(item[1].sender)"
@@ -520,7 +518,6 @@ watch(
         appStore.remoteDesk.delete(item.sender);
         return;
       }
-      receiverId.value = item.sender;
       maxBitrate.value = item.maxBitrate;
       maxFramerate.value = item.maxFramerate;
       resolutionRatio.value = item.resolutionRatio;
