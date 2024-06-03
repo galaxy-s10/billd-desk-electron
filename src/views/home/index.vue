@@ -62,12 +62,64 @@
         </n-button>
       </div>
     </div>
-    <div>
+    <!-- <div>
       <span>码率：{{ maxBitrate }}，</span>
       <span>帧率：{{ maxFramerate }}，</span>
       <span>分辨率：{{ resolutionRatio }}，</span>
       <span>视频内容：{{ videoContentHint }}，</span>
       <span>音频内容：{{ audioContentHint }}</span>
+    </div> -->
+    <div class="rtc-config">
+      <div class="item">
+        <div class="txt">码率：</div>
+        <div class="down">
+          <n-select
+            size="small"
+            v-model:value="currentMaxBitrate"
+            :options="maxBitrate"
+          />
+        </div>
+      </div>
+      <div class="item">
+        <div class="txt">帧率：</div>
+        <div class="down">
+          <n-select
+            size="small"
+            v-model:value="currentMaxFramerate"
+            :options="maxFramerate"
+          />
+        </div>
+      </div>
+      <div class="item">
+        <div class="txt">分辨率：</div>
+        <div class="down big">
+          <n-select
+            size="small"
+            v-model:value="currentResolutionRatio"
+            :options="resolutionRatio"
+          />
+        </div>
+      </div>
+      <div class="item">
+        <div class="txt">视频内容：</div>
+        <div class="down">
+          <n-select
+            size="small"
+            v-model:value="currentVideoContentHint"
+            :options="videoContentHint"
+          />
+        </div>
+      </div>
+      <div class="item">
+        <div class="txt">音频内容：</div>
+        <div class="down big">
+          <n-select
+            size="small"
+            v-model:value="currentAudioContentHint"
+            :options="audioContentHint"
+          />
+        </div>
+      </div>
     </div>
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
@@ -102,6 +154,7 @@ import {
   WEBSOCKET_URL,
   WEB_DESK_URL,
 } from '@/constant';
+import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { routerName } from '@/router';
@@ -134,7 +187,19 @@ const networkStore = useNetworkStore();
 
 const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
   useWebRtcRemoteDesk();
+const {
+  maxBitrate,
+  maxFramerate,
+  resolutionRatio,
+  audioContentHint,
+  videoContentHint,
+} = useRTCParams();
 
+const currentMaxBitrate = ref(maxBitrate.value[3].value);
+const currentMaxFramerate = ref(maxFramerate.value[4].value);
+const currentResolutionRatio = ref(resolutionRatio.value[3].value);
+const currentVideoContentHint = ref(videoContentHint.value[3].value);
+const currentAudioContentHint = ref(audioContentHint.value[0].value);
 const rtc = ref<WebRTCClass>();
 const windowId = ref();
 const num = '123456';
@@ -147,12 +212,6 @@ const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
-
-const maxFramerate = ref(60);
-const maxBitrate = ref(2000);
-const resolutionRatio = ref(1080);
-const videoContentHint = ref('detail');
-const audioContentHint = ref('');
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -312,14 +371,20 @@ async function handleRTC(receiver) {
   if (!anchorStream.value) return;
   try {
     await handlConstraints({
-      frameRate: maxFramerate.value,
-      height: resolutionRatio.value,
+      frameRate: currentMaxFramerate.value,
+      height: currentResolutionRatio.value,
       stream: anchorStream.value,
     });
-    // @ts-ignore
-    setVideoTrackContentHints(anchorStream.value, videoContentHint.value);
-    // @ts-ignore
-    setAudioTrackContentHints(anchorStream.value, audioContentHint.value);
+    setVideoTrackContentHints(
+      anchorStream.value,
+      // @ts-ignore
+      currentVideoContentHint.value
+    );
+    setAudioTrackContentHints(
+      anchorStream.value,
+      // @ts-ignore
+      currentAudioContentHint.value
+    );
     updateWebRtcRemoteDeskConfig({
       roomId: roomId.value,
       anchorStream: anchorStream.value,
@@ -394,15 +459,15 @@ watch(
         const { msgType } = jsondata;
         if (msgType === WsMsgTypeEnum.changeMaxBitrate) {
           const { data }: { data: WsChangeMaxBitrateType['data'] } = jsondata;
-          maxBitrate.value = data.val;
+          currentMaxBitrate.value = data.val;
           rtc.value?.setMaxBitrate(data.val);
         } else if (msgType === WsMsgTypeEnum.changeMaxFramerate) {
           const { data }: { data: WsChangeMaxFramerateType['data'] } = jsondata;
           if (anchorStream.value) {
-            maxFramerate.value = data.val;
+            currentMaxFramerate.value = data.val;
             handlConstraints({
               frameRate: data.val,
-              height: resolutionRatio.value,
+              height: currentResolutionRatio.value,
               stream: anchorStream.value,
             });
           }
@@ -410,9 +475,9 @@ watch(
           const { data }: { data: WsChangeResolutionRatioType['data'] } =
             jsondata;
           if (anchorStream.value) {
-            resolutionRatio.value = data.val;
+            currentResolutionRatio.value = data.val;
             handlConstraints({
-              frameRate: maxFramerate.value,
+              frameRate: currentMaxFramerate.value,
               height: data.val,
               stream: anchorStream.value,
             });
@@ -421,7 +486,7 @@ watch(
           const { data }: { data: WsChangeVideoContentHintType['data'] } =
             jsondata;
           if (anchorStream.value) {
-            videoContentHint.value = data.val;
+            currentVideoContentHint.value = data.val;
             // @ts-ignore
             setVideoTrackContentHints(anchorStream.value, data.val);
           }
@@ -429,7 +494,7 @@ watch(
           const { data }: { data: WsChangeAudioContentHintType['data'] } =
             jsondata;
           if (anchorStream.value) {
-            audioContentHint.value = data.val;
+            currentAudioContentHint.value = data.val;
             // @ts-ignore
             setAudioTrackContentHints(anchorStream.value, data.val);
           }
@@ -518,11 +583,11 @@ watch(
         appStore.remoteDesk.delete(item.sender);
         return;
       }
-      maxBitrate.value = item.maxBitrate;
-      maxFramerate.value = item.maxFramerate;
-      resolutionRatio.value = item.resolutionRatio;
-      videoContentHint.value = item.videoContentHint;
-      audioContentHint.value = item.audioContentHint;
+      currentMaxBitrate.value = item.maxBitrate;
+      currentMaxFramerate.value = item.maxFramerate;
+      currentResolutionRatio.value = item.resolutionRatio;
+      currentVideoContentHint.value = item.videoContentHint;
+      currentAudioContentHint.value = item.audioContentHint;
     });
   },
   {
@@ -594,6 +659,18 @@ function mouseScrollRight(amount) {
 .link {
   cursor: pointer;
   color: $theme-color-gold;
+}
+.rtc-config {
+  display: flex;
+  .item {
+    display: flex;
+    align-items: center;
+    padding-right: 10px;
+
+    .down {
+      width: 150px;
+    }
+  }
 }
 .list {
   .item {

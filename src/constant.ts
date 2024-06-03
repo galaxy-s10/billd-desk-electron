@@ -24,15 +24,15 @@ export const appBuildInfo =
 
 export const NODE_ENV = process.env.NODE_ENV;
 
-// export const WEBSOCKET_URL =
-//   process.env.NODE_ENV === 'development'
-//     ? `ws://localhost:4300` // `ws://localhost:4300`
-//     : `ws://192.168.1.103:4300`;
-
 export const WEBSOCKET_URL =
   process.env.NODE_ENV === 'development'
     ? `ws://localhost:4300` // `ws://localhost:4300`
-    : `wss://srs-pull.${prodDomain}`;
+    : `ws://192.168.12.253:4300`;
+
+// export const WEBSOCKET_URL =
+//   process.env.NODE_ENV === 'development'
+//     ? `ws://localhost:4300` // `ws://localhost:4300`
+//     : `wss://srs-pull.${prodDomain}`;
 
 export const AXIOS_BASEURL =
   process.env.NODE_ENV === 'development'

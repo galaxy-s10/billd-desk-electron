@@ -1,51 +1,103 @@
 <template>
   <div class="wrap">
-    <!-- <div class="test">
+    <div class="test">
+      <div>wss：{{ WEBSOCKET_URL }}</div>
+      <div>axios：{{ AXIOS_BASEURL }}</div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
-    </div> -->
-    <template v-if="NODE_ENV === 'development'">
-      <!-- <template v-if="NODE_ENV !== 'development'"> -->
       <div>
-        <div>
-          <div>wss：{{ WEBSOCKET_URL }}</div>
-          <div>axios：{{ AXIOS_BASEURL }}</div>
+        <span class="item">
+          分辨率：<span v-if="videoSettings?.width">
+            {{ videoSettings?.width || '-' }}x{{ videoSettings?.height || '-' }}
+          </span>
+          <span v-else>-</span>
+        </span>
+        <span class="item">
+          帧率：{{ videoSettings?.frameRate?.toFixed(2) || '-' }}
+        </span>
+      </div>
+      <n-input-group>
+        <n-button>窗口id</n-button>
+        <n-input
+          v-model:value="windowId"
+          :style="{ width: '200px' }"
+          disabled
+        />
+        <n-button @click="copyToClipBoard(windowId)">复制</n-button>
+      </n-input-group>
+
+      <n-input-group>
+        <n-button>我的设备</n-button>
+        <n-input
+          v-model:value="mySocketId"
+          :style="{ width: '200px' }"
+          disabled
+        />
+        <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
+      </n-input-group>
+
+      <n-input-group>
+        <n-button>控制设备</n-button>
+        <n-input
+          v-model:value="receiverId"
+          :style="{ width: '200px' }"
+          disabled
+        />
+        <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
+      </n-input-group>
+      <div class="rtc-config">
+        <div class="item">
+          <div class="txt">码率：</div>
+          <div class="down">
+            <n-select
+              size="small"
+              v-model:value="currentMaxBitrate"
+              :options="maxBitrate"
+            />
+          </div>
         </div>
-        <n-input-group>
-          <n-button>窗口id</n-button>
-          <n-input
-            v-model:value="windowId"
-            :style="{ width: '200px' }"
-            disabled
-          />
-          <n-button @click="copyToClipBoard(windowId)">复制</n-button>
-        </n-input-group>
-
-        <n-input-group>
-          <n-button>我的设备</n-button>
-          <n-input
-            v-model:value="mySocketId"
-            :style="{ width: '200px' }"
-            disabled
-          />
-          <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
-        </n-input-group>
-
-        <n-input-group>
-          <n-button>控制设备</n-button>
-          <n-input
-            v-model:value="receiverId"
-            :style="{ width: '200px' }"
-            disabled
-          />
-          <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
-        </n-input-group>
-        <div>
-          <n-button @click="windowReload">刷新页面</n-button>
-          <n-button @click="handleDebug">打开调试</n-button>
+        <div class="item">
+          <div class="txt">帧率：</div>
+          <div class="down">
+            <n-select
+              size="small"
+              v-model:value="currentMaxFramerate"
+              :options="maxFramerate"
+            />
+          </div>
+        </div>
+        <div class="item">
+          <div class="txt">分辨率：</div>
+          <div class="down big">
+            <n-select
+              size="small"
+              v-model:value="currentResolutionRatio"
+              :options="resolutionRatio"
+            />
+          </div>
+        </div>
+        <div class="item">
+          <div class="txt">视频内容：</div>
+          <div class="down">
+            <n-select
+              size="small"
+              v-model:value="currentVideoContentHint"
+              :options="videoContentHint"
+            />
+          </div>
+        </div>
+        <div class="item">
+          <div class="txt">音频内容：</div>
+          <div class="down big">
+            <n-select
+              size="small"
+              v-model:value="currentAudioContentHint"
+              :options="audioContentHint"
+            />
+          </div>
         </div>
       </div>
-    </template>
+    </div>
 
     <div
       class="remote-video"
@@ -77,13 +129,19 @@ import {
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { AXIOS_BASEURL, NODE_ENV, WEBSOCKET_URL } from '@/constant';
+import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
+import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
 import {
   RemoteDeskBehaviorEnum,
+  WsChangeAudioContentHintType,
+  WsChangeMaxBitrateType,
+  WsChangeMaxFramerateType,
+  WsChangeResolutionRatioType,
+  WsChangeVideoContentHintType,
   WsConnectStatusEnum,
   WsMsgTypeEnum,
   WsRemoteDeskBehaviorType,
@@ -99,6 +157,20 @@ const titlebarHeight = ref(50);
 
 const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
   useWebRtcRemoteDesk();
+
+const {
+  maxBitrate,
+  maxFramerate,
+  resolutionRatio,
+  audioContentHint,
+  videoContentHint,
+} = useRTCParams();
+
+const currentMaxBitrate = ref(maxBitrate.value[3].value);
+const currentMaxFramerate = ref(maxFramerate.value[4].value);
+const currentResolutionRatio = ref(resolutionRatio.value[3].value);
+const currentVideoContentHint = ref(videoContentHint.value[3].value);
+const currentAudioContentHint = ref(audioContentHint.value[0].value);
 
 const isDown = ref(false);
 let clickTimer: any;
@@ -117,6 +189,9 @@ const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
 
+const loopGetSettingsTimer = ref();
+const videoSettings = ref<MediaTrackSettings>();
+
 watch(
   () => connectStatus.value,
   (newval) => {
@@ -128,14 +203,90 @@ watch(
           roomId: roomId.value,
           sender: mySocketId.value,
           receiver: receiverId.value,
-          maxBitrate: 111,
-          maxFramerate: 111,
-          resolutionRatio: 111,
-          videoContentHint: '',
-          audioContentHint: '',
+          maxBitrate: currentMaxBitrate.value,
+          maxFramerate: currentMaxFramerate.value,
+          resolutionRatio: currentResolutionRatio.value,
+          videoContentHint: currentVideoContentHint.value,
+          audioContentHint: currentAudioContentHint.value,
         },
       });
     }
+  }
+);
+
+watch(
+  () => currentMaxBitrate.value,
+  (newval) => {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsChangeMaxBitrateType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.changeMaxBitrate,
+        data: {
+          live_room_id: Number(roomId.value),
+          val: newval,
+        },
+      });
+  }
+);
+watch(
+  () => currentMaxFramerate.value,
+  (newval) => {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsChangeMaxFramerateType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.changeMaxFramerate,
+        data: {
+          live_room_id: Number(roomId.value),
+          val: newval,
+        },
+      });
+  }
+);
+watch(
+  () => currentResolutionRatio.value,
+  (newval) => {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsChangeResolutionRatioType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.changeResolutionRatio,
+        data: {
+          live_room_id: Number(roomId.value),
+          val: newval,
+        },
+      });
+  }
+);
+watch(
+  () => currentVideoContentHint.value,
+  (newval) => {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsChangeVideoContentHintType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.changeVideoContentHint,
+        data: {
+          live_room_id: Number(roomId.value),
+          val: newval,
+        },
+      });
+  }
+);
+watch(
+  () => currentAudioContentHint.value,
+  (newval) => {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsChangeAudioContentHintType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.changeAudioContentHint,
+        data: {
+          live_room_id: Number(roomId.value),
+          val: newval,
+        },
+      });
   }
 );
 
@@ -155,7 +306,7 @@ onMounted(() => {
     isRemoteDesk: true,
   });
   console.log(route.query);
-
+  loopGetSettings();
   if (route.query.receiverId !== undefined) {
     receiverId.value = `${route.query.receiverId as string}`;
   } else {
@@ -256,6 +407,19 @@ onMounted(() => {
     handleDesktopStream(source.stream.id);
   });
 });
+
+function loopGetSettings() {
+  clearInterval(loopGetSettingsTimer.value);
+  loopGetSettingsTimer.value = setInterval(() => {
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.localStream?.getVideoTracks()
+      .forEach((item) => {
+        videoSettings.value = item.getSettings();
+        console.log(JSON.stringify(videoSettings.value));
+      });
+  }, 1000);
+}
 
 async function handleDesktopStream(chromeMediaSourceId) {
   try {
@@ -480,8 +644,8 @@ watch(
             window.electronAPI.ipcRenderer.send(
               'setChildWindowBounds',
               windowId.value,
-              res.width,
-              res.height + titlebarHeight.value
+              Math.ceil(res.width),
+              Math.ceil(res.height + titlebarHeight.value)
             );
           }
           showLoading.value = false;
@@ -773,7 +937,10 @@ function handleDebug() {
     top: 0;
     left: 0;
     z-index: 999;
-    background-color: red;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background-color: rgba($color: #ffffff, $alpha: 0.5);
   }
   .remote-video {
     width: 100vw;
