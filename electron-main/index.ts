@@ -218,11 +218,11 @@ function createWindow() {
       });
     }
   });
-  ipcMain.on('mouseMove', (_event, x, y) => {
+  ipcMain.on('mouseMove', async (_event, x, y) => {
     console.log('收到mouseMove', x, y);
     try {
-      // await nutjs.mouse.move([{ x, y }]);
-      nutjs.mouse.move([{ x, y }]);
+      await nutjs.mouse.move([{ x, y }]);
+      // nutjs.mouse.move([{ x, y }]);
       win?.webContents.send('mouseMoveRes', {
         isErr: false,
         msg: { x, y },
@@ -458,6 +458,15 @@ function createWindow() {
     console.log('electron收到workAreaSize', data);
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     win?.webContents.send('workAreaSizeRes', {
+      width,
+      height,
+    });
+  });
+
+  ipcMain.on('getPrimaryDisplaySize', (_event, data) => {
+    console.log('electron收到getPrimaryDisplaySize', data);
+    const { width, height } = screen.getPrimaryDisplay().size;
+    win?.webContents.send('getPrimaryDisplaySizeRes', {
       width,
       height,
     });

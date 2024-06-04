@@ -11,6 +11,10 @@ export type AppRootState = {
     width: number;
     height: number;
   };
+  primaryDisplaySize: {
+    width: number;
+    height: number;
+  };
   remoteDesk: Map<
     string,
     {
@@ -85,6 +89,7 @@ export const useAppStore = defineStore('app', {
     return {
       version: '',
       workAreaSize: { width: 0, height: 0 },
+      primaryDisplaySize: { width: 0, height: 0 },
       remoteDesk: new Map(),
       playing: false,
       videoRatio: 16 / 9,

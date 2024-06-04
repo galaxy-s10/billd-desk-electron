@@ -124,6 +124,7 @@
 
 <script lang="ts" setup>
 import { Key } from '@nut-tree/shared';
+import { useDraggable } from '@vueuse/core';
 import {
   computeBox,
   copyToClipBoard,
@@ -152,7 +153,6 @@ import {
   WsStartRemoteDesk,
 } from '@/types/websocket';
 import { videoFullBox } from '@/utils';
-import { useDraggable } from '@vueuse/core';
 
 const route = useRoute();
 const { initWs, connectStatus } = useWebsocket();
@@ -172,8 +172,8 @@ const {
   videoContentHint,
 } = useRTCParams();
 
-const dragEl = ref<HTMLDivElement | null>(null);
-const { style, x, y } = useDraggable(dragEl, {
+const dragEl = ref<HTMLDivElement>();
+const { style } = useDraggable(dragEl, {
   initialValue: { x: 40, y: 40 },
 });
 const currentMaxBitrate = ref(maxBitrate.value[3].value);

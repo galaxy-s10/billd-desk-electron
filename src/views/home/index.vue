@@ -240,7 +240,17 @@ onMounted(() => {
     appStore.workAreaSize.height = source.height;
   });
 
+  window.electronAPI.ipcRenderer.on(
+    'getPrimaryDisplaySizeRes',
+    (_event, source) => {
+      console.log('getPrimaryDisplaySizeRes', source);
+      appStore.primaryDisplaySize.width = source.width;
+      appStore.primaryDisplaySize.height = source.height;
+    }
+  );
+
   window.electronAPI.ipcRenderer.send('workAreaSize');
+  window.electronAPI.ipcRenderer.send('getPrimaryDisplaySize');
 
   window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
     console.log('getMainWindowIdRes', source);
@@ -500,9 +510,16 @@ watch(
           }
         } else if (msgType === WsMsgTypeEnum.remoteDeskBehavior) {
           const { data }: { data: WsRemoteDeskBehaviorType['data'] } = jsondata;
-          if (setting) {
-            const x = (setting.width || 0) * (data.x / 1000);
-            const y = (setting.height || 0) * (data.y / 1000);
+          if (appStore.primaryDisplaySize) {
+            const x =
+              (appStore.primaryDisplaySize.width || 0) * (data.x / 1000);
+            const y =
+              (appStore.primaryDisplaySize.height || 0) * (data.y / 1000);
+            console.log(
+              JSON.stringify(setting),
+              appStore.primaryDisplaySize,
+              '----'
+            );
             if (data.type === RemoteDeskBehaviorEnum.setPosition) {
               mouseSetPosition(x, y);
             } else if (data.type === RemoteDeskBehaviorEnum.mouseMove) {
@@ -615,6 +632,7 @@ function mouseSetPosition(x, y) {
   window.electronAPI.ipcRenderer.send('mouseSetPosition', x, y);
 }
 function mouseMove(x, y) {
+  console.log('mouseMovemouseMove', x, y);
   window.electronAPI.ipcRenderer.send('mouseMove', x, y);
 }
 function mouseDrag(x, y) {
