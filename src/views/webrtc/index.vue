@@ -1,6 +1,10 @@
 <template>
   <div class="wrap">
-    <div class="test">
+    <div
+      class="drag"
+      :style="style"
+      ref="dragEl"
+    >
       <div>wss：{{ WEBSOCKET_URL }}</div>
       <div>axios：{{ AXIOS_BASEURL }}</div>
       <n-button @click="windowReload">刷新页面</n-button>
@@ -148,11 +152,13 @@ import {
   WsStartRemoteDesk,
 } from '@/types/websocket';
 import { videoFullBox } from '@/utils';
+import { useDraggable } from '@vueuse/core';
 
 const route = useRoute();
 const { initWs, connectStatus } = useWebsocket();
 const appStore = useAppStore();
 const networkStore = useNetworkStore();
+
 const titlebarHeight = ref(50);
 
 const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
@@ -166,6 +172,10 @@ const {
   videoContentHint,
 } = useRTCParams();
 
+const dragEl = ref<HTMLDivElement | null>(null);
+const { style, x, y } = useDraggable(dragEl, {
+  initialValue: { x: 40, y: 40 },
+});
 const currentMaxBitrate = ref(maxBitrate.value[3].value);
 const currentMaxFramerate = ref(maxFramerate.value[4].value);
 const currentResolutionRatio = ref(resolutionRatio.value[3].value);
@@ -932,21 +942,19 @@ function handleDebug() {
   overflow: hidden;
   width: 100vw;
   height: 100vh;
-  .test {
+  .drag {
     position: fixed;
-    top: 0;
-    left: 0;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: red;
     z-index: 999;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    background-color: rgba($color: #ffffff, $alpha: 0.5);
   }
   .remote-video {
     width: 100vw;
     height: 100vh;
     line-height: 0;
-    cursor: none;
+    // cursor: none;
   }
 }
 .loading {
