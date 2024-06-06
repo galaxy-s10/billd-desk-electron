@@ -5,99 +5,113 @@
       :style="style"
       ref="dragEl"
     >
-      <div>wss：{{ WEBSOCKET_URL }}</div>
-      <div>axios：{{ AXIOS_BASEURL }}</div>
-      <n-button @click="windowReload">刷新页面</n-button>
-      <n-button @click="handleDebug">打开调试</n-button>
-      <div>
-        <span class="item">
-          分辨率：<span v-if="videoSettings?.width">
-            {{ videoSettings?.width || '-' }}x{{ videoSettings?.height || '-' }}
+      <span
+        class="txt"
+        @click="showDetail = !showDetail"
+        >连接详情</span
+      >
+
+      <div
+        class="info"
+        :class="{ show: showDetail }"
+      >
+        <div>wss：{{ WEBSOCKET_URL }}</div>
+        <div>axios：{{ AXIOS_BASEURL }}</div>
+        <n-button @click="mockClick">mockClick</n-button>
+        <n-button @click="windowReload">刷新页面</n-button>
+        <n-button @click="handleDebug">打开调试</n-button>
+        <div>
+          <span class="item">
+            分辨率：<span v-if="videoSettings?.width">
+              {{ videoSettings?.width || '-' }}x{{
+                videoSettings?.height || '-'
+              }}
+            </span>
+            <span v-else>-</span>
           </span>
-          <span v-else>-</span>
-        </span>
-        <span class="item">
-          帧率：{{ videoSettings?.frameRate?.toFixed(2) || '-' }}
-        </span>
-      </div>
-      <n-input-group>
-        <n-button>窗口id</n-button>
-        <n-input
-          v-model:value="windowId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="copyToClipBoard(windowId)">复制</n-button>
-      </n-input-group>
+          <span class="item">
+            帧率：{{ videoSettings?.frameRate?.toFixed(2) || '-' }}
+          </span>
+        </div>
+        <n-input-group>
+          <n-button>窗口id</n-button>
+          <n-input
+            v-model:value="windowId"
+            :style="{ width: '200px' }"
+            disabled
+          />
+          <n-button @click="copyToClipBoard(windowId)">复制</n-button>
+        </n-input-group>
 
-      <n-input-group>
-        <n-button>我的设备</n-button>
-        <n-input
-          v-model:value="mySocketId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
-      </n-input-group>
+        <n-input-group>
+          <n-button>我的设备</n-button>
+          <n-input
+            v-model:value="mySocketId"
+            :style="{ width: '200px' }"
+            disabled
+          />
+          <n-button @click="copyToClipBoard(mySocketId)">复制</n-button>
+        </n-input-group>
 
-      <n-input-group>
-        <n-button>控制设备</n-button>
-        <n-input
-          v-model:value="receiverId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
-      </n-input-group>
-      <div class="rtc-config">
-        <div class="item">
-          <div class="txt">码率：</div>
-          <div class="down">
-            <n-select
-              size="small"
-              v-model:value="currentMaxBitrate"
-              :options="maxBitrate"
-            />
+        <n-input-group>
+          <n-button>控制设备</n-button>
+          <n-input
+            v-model:value="receiverId"
+            :style="{ width: '200px' }"
+            disabled
+          />
+          <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
+        </n-input-group>
+        <div class="rtc-config">
+          <div class="item">
+            <div class="txt">码率：</div>
+            <div class="down">
+              <n-select
+                size="small"
+                v-model:value="currentMaxBitrate"
+                :options="maxBitrate"
+              />
+            </div>
           </div>
-        </div>
-        <div class="item">
-          <div class="txt">帧率：</div>
-          <div class="down">
-            <n-select
-              size="small"
-              v-model:value="currentMaxFramerate"
-              :options="maxFramerate"
-            />
+          <div class="item">
+            <div class="txt">帧率：</div>
+            <div class="down">
+              <n-select
+                size="small"
+                v-model:value="currentMaxFramerate"
+                :options="maxFramerate"
+              />
+            </div>
           </div>
-        </div>
-        <div class="item">
-          <div class="txt">分辨率：</div>
-          <div class="down big">
-            <n-select
-              size="small"
-              v-model:value="currentResolutionRatio"
-              :options="resolutionRatio"
-            />
+          <div class="item">
+            <div class="txt">分辨率：</div>
+            <div class="down big">
+              <n-select
+                size="small"
+                v-model:value="currentResolutionRatio"
+                :options="resolutionRatio"
+              />
+            </div>
           </div>
-        </div>
-        <div class="item">
-          <div class="txt">视频内容：</div>
-          <div class="down">
-            <n-select
-              size="small"
-              v-model:value="currentVideoContentHint"
-              :options="videoContentHint"
-            />
+          <div class="item">
+            <div class="txt">视频内容：</div>
+            <div class="down">
+              <n-select
+                size="small"
+                v-model:value="currentVideoContentHint"
+                :options="videoContentHint"
+              />
+            </div>
           </div>
-        </div>
-        <div class="item">
-          <div class="txt">音频内容：</div>
-          <div class="down big">
-            <n-select
-              size="small"
-              v-model:value="currentAudioContentHint"
-              :options="audioContentHint"
-            />
+          <div class="item">
+            <div class="txt">音频内容：</div>
+            <div class="down big">
+              <n-select
+                size="small"
+                v-model:value="currentAudioContentHint"
+                :options="audioContentHint"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -172,6 +186,7 @@ const {
   videoContentHint,
 } = useRTCParams();
 
+const showDetail = ref(false);
 const dragEl = ref<HTMLDivElement>();
 const { style } = useDraggable(dragEl, {
   initialValue: { x: 40, y: 40 },
@@ -750,6 +765,7 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 function handleDoublelclick() {
+  console.log('handleDoublelclick');
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
@@ -769,6 +785,7 @@ function handleDoublelclick() {
 }
 
 function handleContextmenu() {
+  console.log('handleContextmenu');
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
@@ -807,6 +824,10 @@ function handleMouseDown(event: MouseEvent) {
   const x = (xInsideElement / rect.width) * 1000;
   const y = (yInsideElement / rect.height) * 1000;
   console.log('handleMouseDown', x, y, xInsideElement, yInsideElement);
+  if (event.button === 2) {
+    console.log('handleMouseDown-当前是鼠标右键');
+    return;
+  }
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
@@ -877,6 +898,10 @@ function handleMouseUp(event: MouseEvent) {
   const x = (xInsideElement / rect.width) * 1000;
   const y = (yInsideElement / rect.height) * 1000;
   console.log('handleMouseUp', x, y, xInsideElement, yInsideElement);
+  if (event.button === 2) {
+    console.log('handleMouseUp-当前是鼠标右键');
+    return;
+  }
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
@@ -935,6 +960,27 @@ function handleDebug() {
     Number(windowId.value)
   );
 }
+function mockClick() {
+  networkStore.rtcMap
+    .get(receiverId.value)
+    ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
+      requestId: getRandomString(8),
+      msgType: WsMsgTypeEnum.remoteDeskBehavior,
+      data: {
+        roomId: roomId.value,
+        sender: mySocketId.value,
+        receiver: receiverId.value,
+        type: RemoteDeskBehaviorEnum.mouseMove,
+        keyboardtype: 0,
+        x: 125,
+        y: 976,
+        amount: 0,
+      },
+    });
+  setTimeout(() => {
+    handleContextmenu();
+  }, 1000);
+}
 </script>
 
 <style lang="scss" scoped>
@@ -944,11 +990,32 @@ function handleDebug() {
   height: 100vh;
   .drag {
     position: fixed;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background-color: red;
     z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: white;
+    box-shadow:
+      rgba(0, 0, 0, 0.15) 0px 15px 25px,
+      rgba(0, 0, 0, 0.05) 0px 5px 10px;
+    .txt {
+      cursor: pointer;
+    }
+    .info {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      display: none;
+      padding: 10px;
+      background-color: white;
+      box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      &.show {
+        display: block;
+      }
+    }
   }
   .remote-video {
     width: 100vw;

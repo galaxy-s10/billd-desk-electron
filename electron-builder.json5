@@ -24,7 +24,7 @@
     artifactName: '${productName}-win-${platform}-${version}-${arch}-Installer.${ext}',
     // highestAvailable，可用的最高权限
     // requireAdministrator，管理员权限
-    requestedExecutionLevel: 'highestAvailable',
+    requestedExecutionLevel: 'requireAdministrator',
     target: [
       {
         // portable、nsis
