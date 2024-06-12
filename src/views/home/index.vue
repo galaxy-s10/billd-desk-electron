@@ -62,13 +62,6 @@
         </n-button>
       </div>
     </div>
-    <!-- <div>
-      <span>码率：{{ maxBitrate }}，</span>
-      <span>帧率：{{ maxFramerate }}，</span>
-      <span>分辨率：{{ resolutionRatio }}，</span>
-      <span>视频内容：{{ videoContentHint }}，</span>
-      <span>音频内容：{{ audioContentHint }}</span>
-    </div> -->
     <div class="rtc-config">
       <div class="item">
         <div class="txt">码率：</div>
@@ -100,6 +93,8 @@
           />
         </div>
       </div>
+    </div>
+    <div class="rtc-config">
       <div class="item">
         <div class="txt">视频内容：</div>
         <div class="down">
@@ -461,6 +456,7 @@ watch(
       if (!item.cbDataChannel) return;
       const setting = anchorStream.value?.getVideoTracks()[0].getSettings();
       item.cbDataChannel.onmessage = (event) => {
+        console.log('dataChannel-onmessage', event);
         const jsondata: {
           msgType: WsMsgTypeEnum;
           requestId: string;
@@ -675,8 +671,8 @@ function mouseScrollRight(amount) {
 
 <style lang="scss" scoped>
 .link {
-  cursor: pointer;
   color: $theme-color-gold;
+  cursor: pointer;
 }
 .rtc-config {
   display: flex;

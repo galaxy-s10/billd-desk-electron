@@ -8,8 +8,9 @@
       <span
         class="txt"
         @click="showDetail = !showDetail"
-        >连接详情</span
       >
+        连接详情
+      </span>
 
       <div
         class="info"
@@ -20,6 +21,16 @@
         <n-button @click="mockClick">mockClick</n-button>
         <n-button @click="windowReload">刷新页面</n-button>
         <n-button @click="handleDebug">打开调试</n-button>
+        <n-button>
+          <input
+            ref="uploadRef"
+            type="file"
+            class="input-upload"
+            multiple
+            @change="uploadChange"
+          />
+          传输文件
+        </n-button>
         <div>
           <span class="item">
             分辨率：<span v-if="videoSettings?.width">
@@ -93,6 +104,8 @@
               />
             </div>
           </div>
+        </div>
+        <div class="rtc-config">
           <div class="item">
             <div class="txt">视频内容：</div>
             <div class="down">
@@ -200,6 +213,7 @@ const currentAudioContentHint = ref(audioContentHint.value[0].value);
 const isDown = ref(false);
 let clickTimer: any;
 let isLongClick = false;
+const uploadRef = ref<HTMLInputElement>();
 const videoWrapRef = ref<HTMLVideoElement>();
 const windowId = ref('');
 const num = '123456';
@@ -314,6 +328,18 @@ watch(
       });
   }
 );
+
+function uploadChange() {
+  const fileList = uploadRef.value?.files;
+  console.log(fileList);
+  if (fileList) {
+    const file = fileList[0];
+    const blob = new Blob([file], { type: file.type });
+
+    console.log(networkStore.rtcMap.get(receiverId.value), 'lll1');
+    networkStore.rtcMap.get(receiverId.value)?.dataChannelSendBlob({ blob });
+  }
+}
 
 onUnmounted(() => {
   videoWrapRef.value?.removeEventListener('wheel', handleMouseWheel);
@@ -480,10 +506,6 @@ async function handleDesktopStream(chromeMediaSourceId) {
 }
 
 function handleMouseWheel(e: WheelEvent) {
-  if (!appStore.remoteDesk.size) {
-    return;
-  }
-  // console.log('handleMouseWheel', e);
   e.preventDefault();
   if (e.deltaY > 0) {
     networkStore.rtcMap
@@ -615,27 +637,6 @@ watch(
     }
   }
 );
-
-// watch(
-//   () => appStore.remoteDesk.get(receiverId.value)?.isClose,
-//   (newval) => {
-//     if (newval) {
-//       networkStore.removeRtc(receiverId.value);
-//       useTip({
-//         content: '远程连接断开',
-//         hiddenCancel: true,
-//         hiddenClose: true,
-//       })
-//         .catch()
-//         .then(() => {
-//           window.electronAPI.ipcRenderer.send(
-//             'childWindowClose',
-//             windowId.value
-//           );
-//         });
-//     }
-//   }
-// );
 
 watch(
   () => networkStore.rtcMap,
@@ -1014,6 +1015,9 @@ function mockClick() {
       box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
       &.show {
         display: block;
+      }
+      .input-upload {
+        opacity: 0;
       }
     }
   }

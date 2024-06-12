@@ -80,6 +80,7 @@ export enum WsMsgTypeEnum {
 
   msrBlob = 'msrBlob',
   batchSendOffer = 'batchSendOffer',
+  fileTransfer = 'fileTransfer',
 
   changeMaxBitrate = 'changeMaxBitrate',
   changeMaxFramerate = 'changeMaxFramerate',
