@@ -18,7 +18,9 @@ export function prettierSendWsMsg(data: {
   data;
 }) {
   console.warn(
-    `【websocket】发送消息 msgType:${data.msgType},requestId:${data.requestId}`,
+    `${new Date().toLocaleString()}【websocket】发送消息 msgType:${
+      data.msgType
+    },requestId:${data.requestId}`,
     data
   );
 }

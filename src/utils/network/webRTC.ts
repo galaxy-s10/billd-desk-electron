@@ -555,7 +555,7 @@ export class WebRTCClass {
           maxRetransmits: 3,
           // ordered，表示通过 RTCDataChannel 的信息的到达顺序需要和发送顺序一致 (true), 或者到达顺序不需要和发送顺序一致 (false). 默认：true
           ordered: true,
-          protocol: 'udp',
+          // protocol: 'udp',
         }
       );
       this.dataChannel.onopen = () => {
