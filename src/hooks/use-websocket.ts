@@ -94,6 +94,18 @@ export const useWebsocket = () => {
   });
 
   watch(
+    () => connectStatus.value,
+    (newval) => {
+      if (newval === WsConnectStatusEnum.connect) {
+        const ws = networkStore.wsMap.get(roomId.value);
+        if (ws?.socketIo?.id) {
+          handleHeartbeat(ws?.socketIo?.id);
+        }
+      }
+    }
+  );
+
+  watch(
     [() => userStore.userInfo?.id, () => connectStatus.value],
     ([userInfo, status]) => {
       if (userInfo && status === WsConnectStatusEnum.connect) {
@@ -116,6 +128,7 @@ export const useWebsocket = () => {
   });
 
   function handleHeartbeat(socketId: string) {
+    clearInterval(loopHeartbeatTimer.value);
     loopHeartbeatTimer.value = setInterval(() => {
       const ws = networkStore.wsMap.get(roomId.value);
       if (!ws) return;
