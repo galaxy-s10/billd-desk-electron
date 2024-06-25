@@ -127,11 +127,12 @@ export const COOKIE_KEY = {
   thirdLoginInfo: 'thirdLoginInfo',
 };
 
-export const lsKeyPrefix = 'billd_live___';
+export const lsKeyPrefix = 'billd_desk___';
 
 // 全局的localStorage的key
 export const lsKey = {
   lastBuildDate: 'lastBuildDate',
+  uid: 'uid',
   token: 'token',
 };
 

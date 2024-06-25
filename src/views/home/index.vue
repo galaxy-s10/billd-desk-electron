@@ -173,6 +173,7 @@ import {
   setAudioTrackContentHints,
   setVideoTrackContentHints,
 } from '@/utils';
+import { getToken, getUid } from '@/utils/localStorage/user';
 import { WebRTCClass } from '@/utils/network/webRTC';
 
 const route = useRoute();
@@ -214,6 +215,7 @@ onUnmounted(() => {
 });
 
 onMounted(() => {
+  initUser();
   handleMainWindowSetAlwaysOnTop(true);
   initWs({
     roomId: roomId.value,
@@ -321,6 +323,14 @@ onMounted(() => {
     handleDesktopStream(source.stream.id);
   });
 });
+
+function initUser() {
+  const uid = getUid();
+  const token = getToken();
+  if (!uid || !token) {
+    console.log('生成账号');
+  }
+}
 
 watch(
   () => connectStatus.value,
