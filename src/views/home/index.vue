@@ -143,6 +143,7 @@ import { copyToClipBoard, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { fetchDeskUserCreate } from '@/api/deskUser';
 import {
   AXIOS_BASEURL,
   PROJECT_GITHUB,
@@ -173,7 +174,12 @@ import {
   setAudioTrackContentHints,
   setVideoTrackContentHints,
 } from '@/utils';
-import { getToken, getUid } from '@/utils/localStorage/user';
+import {
+  getPassword,
+  getUuid,
+  setPassword,
+  setUuid,
+} from '@/utils/localStorage/user';
 import { WebRTCClass } from '@/utils/network/webRTC';
 
 const route = useRoute();
@@ -324,11 +330,17 @@ onMounted(() => {
   });
 });
 
-function initUser() {
-  const uid = getUid();
-  const token = getToken();
-  if (!uid || !token) {
+async function initUser() {
+  const uid = getUuid();
+  const password = getPassword();
+  if (!uid || !password) {
     console.log('生成账号');
+    const res = await fetchDeskUserCreate();
+    console.log(res);
+    if (res.code === 200) {
+      setUuid(res.data.uuid!);
+      setPassword(res.data.password!);
+    }
   }
 }
 
