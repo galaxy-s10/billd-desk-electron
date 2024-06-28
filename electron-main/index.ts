@@ -42,7 +42,7 @@ function handleUrlQuery(obj: Record<string, string>) {
     return res;
   }
 }
-const windowNormalParams = { width: 800, height: 400 };
+const windowNormalParams = { width: 800, height: 500 };
 
 function createWindow() {
   win = new BrowserWindow({

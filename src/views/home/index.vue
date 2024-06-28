@@ -33,6 +33,25 @@
         <n-button @click="handleCopy(windowId)">复制</n-button>
       </n-input-group>
       <n-input-group>
+        <n-input-group-label>uuid</n-input-group-label>
+        <n-input
+          v-model:value="uuid"
+          :style="{ width: '200px' }"
+          disabled
+        />
+        <n-button @click="handleCopy(uuid)">复制</n-button>
+        <n-button @click="handleReset">重置</n-button>
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>password</n-input-group-label>
+        <n-input
+          v-model:value="newpassword"
+          :style="{ width: '200px' }"
+          @blur="handleUpdatePassword"
+        />
+        <n-button @click="handleCopy(newpassword)">复制</n-button>
+      </n-input-group>
+      <n-input-group>
         <n-input-group-label>我的设备</n-input-group-label>
         <n-input
           v-model:value="mySocketId"
@@ -143,7 +162,11 @@ import { copyToClipBoard, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { fetchDeskUserCreate } from '@/api/deskUser';
+import {
+  fetchDeskUserCreate,
+  fetchDeskUserLogin,
+  fetchDeskUserUpdateByUuid,
+} from '@/api/deskUser';
 import {
   AXIOS_BASEURL,
   PROJECT_GITHUB,
@@ -214,6 +237,10 @@ const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
+
+const uuid = ref(getUuid());
+const password = ref(getPassword());
+const newpassword = ref(getPassword());
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -331,16 +358,46 @@ onMounted(() => {
 });
 
 async function initUser() {
-  const uid = getUuid();
-  const password = getPassword();
-  if (!uid || !password) {
+  if (!uuid.value || !password.value) {
     console.log('生成账号');
     const res = await fetchDeskUserCreate();
-    console.log(res);
     if (res.code === 200) {
+      uuid.value = res.data.uuid!;
+      password.value = res.data.password!;
+      newpassword.value = res.data.password!;
       setUuid(res.data.uuid!);
       setPassword(res.data.password!);
     }
+  } else {
+    const res = await fetchDeskUserLogin({
+      uuid: uuid.value,
+      password: password.value,
+    });
+    if (res.code === 200) {
+      setUuid(uuid.value);
+      setPassword(password.value);
+    }
+  }
+}
+
+async function handleUpdatePassword() {
+  if (
+    newpassword.value &&
+    newpassword.value.length > 6 &&
+    newpassword.value.length < 12
+  ) {
+    const res = await fetchDeskUserUpdateByUuid({
+      uuid: uuid.value!,
+      password: password.value!,
+      new_password: newpassword.value!,
+    });
+    if (res.code === 200) {
+      setUuid(uuid.value!);
+      setPassword(newpassword.value);
+    }
+    console.log(res);
+  } else {
+    window.$message.warning('密码长度要求6-12位！');
   }
 }
 
@@ -430,6 +487,12 @@ async function handleRTC(receiver) {
   } catch (err) {
     console.log(err);
   }
+}
+
+function handleReset() {
+  uuid.value = '';
+  password.value = '';
+  initUser();
 }
 
 function handleCopy(str) {
