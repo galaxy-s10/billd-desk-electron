@@ -45,6 +45,7 @@ import {
   WsUpdateJoinInfoType,
 } from '@/types/websocket';
 import { createNullVideo, handleUserMedia } from '@/utils';
+import { getPassword, getUuid } from '@/utils/localStorage/user';
 import {
   WebSocketClass,
   prettierReceiveWsMsg,
@@ -77,6 +78,8 @@ export const useWebsocket = () => {
   const roomLiving = ref(false);
   const isAnchor = ref(false);
   const isRemoteDesk = ref(false);
+  const deskUserUuid = ref(getUuid() || '');
+  const deskUserPassword = ref(getPassword() || '');
   const anchorInfo = ref<IUser>();
   const anchorSocketId = ref('');
   const canvasVideoStream = ref<MediaStream>();
@@ -257,6 +260,8 @@ export const useWebsocket = () => {
         socket_id: mySocketId.value,
         live_room_id: Number(roomId.value),
         user_info: userStore.userInfo,
+        deskUserUuid: deskUserUuid.value,
+        deskUserPassword: deskUserPassword.value,
       },
     });
   }
@@ -844,6 +849,8 @@ export const useWebsocket = () => {
     initWs,
     handleStartLive,
     handleSendGetLiveUser,
+    deskUserUuid,
+    deskUserPassword,
     connectStatus,
     mySocketId,
     canvasVideoStream,

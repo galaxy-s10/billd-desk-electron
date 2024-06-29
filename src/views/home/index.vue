@@ -35,11 +35,11 @@
       <n-input-group>
         <n-input-group-label>uuid</n-input-group-label>
         <n-input
-          v-model:value="uuid"
+          v-model:value="deskUserUuid"
           :style="{ width: '200px' }"
           disabled
         />
-        <n-button @click="handleCopy(uuid)">复制</n-button>
+        <n-button @click="handleCopy(deskUserUuid)">复制</n-button>
         <n-button @click="handleReset">重置</n-button>
       </n-input-group>
       <n-input-group>
@@ -158,7 +158,7 @@
 </template>
 
 <script lang="ts" setup>
-import { copyToClipBoard, windowReload } from 'billd-utils';
+import { copyToClipBoard, getRandomString, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -238,9 +238,10 @@ const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
 
-const uuid = ref(getUuid());
-const password = ref(getPassword());
+const deskUserUuid = ref(getUuid());
+const deskUserPassword = ref(getPassword());
 const newpassword = ref(getPassword());
+const tiemr = ref();
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -358,24 +359,24 @@ onMounted(() => {
 });
 
 async function initUser() {
-  if (!uuid.value || !password.value) {
+  if (!deskUserUuid.value || !deskUserPassword.value) {
     console.log('生成账号');
     const res = await fetchDeskUserCreate();
     if (res.code === 200) {
-      uuid.value = res.data.uuid!;
-      password.value = res.data.password!;
+      deskUserUuid.value = res.data.uuid!;
+      deskUserPassword.value = res.data.password!;
       newpassword.value = res.data.password!;
       setUuid(res.data.uuid!);
       setPassword(res.data.password!);
     }
   } else {
     const res = await fetchDeskUserLogin({
-      uuid: uuid.value,
-      password: password.value,
+      uuid: deskUserUuid.value,
+      password: deskUserPassword.value,
     });
     if (res.code === 200) {
-      setUuid(uuid.value);
-      setPassword(password.value);
+      setUuid(deskUserUuid.value);
+      setPassword(deskUserPassword.value);
     }
   }
 }
@@ -387,15 +388,15 @@ async function handleUpdatePassword() {
     newpassword.value.length < 12
   ) {
     const res = await fetchDeskUserUpdateByUuid({
-      uuid: uuid.value!,
-      password: password.value!,
+      uuid: deskUserUuid.value!,
+      password: deskUserPassword.value!,
       new_password: newpassword.value!,
     });
     if (res.code === 200) {
-      setUuid(uuid.value!);
+      setUuid(deskUserUuid.value!);
       setPassword(newpassword.value);
     }
-    console.log(res);
+    window.$message.success('更新密码成功！');
   } else {
     window.$message.warning('密码长度要求6-12位！');
   }
@@ -490,8 +491,8 @@ async function handleRTC(receiver) {
 }
 
 function handleReset() {
-  uuid.value = '';
-  password.value = '';
+  deskUserUuid.value = '';
+  deskUserPassword.value = '';
   initUser();
 }
 
@@ -505,12 +506,34 @@ function startRemote() {
     window.$message.warning('请输入控制设备');
     return;
   }
+  clearInterval(tiemr.value);
+  tiemr.value = setInterval(() => {
+    networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
+      requestId: getRandomString(8),
+      msgType: WsMsgTypeEnum.updateDeskUser,
+      data: {
+        roomId: roomId.value,
+        sender: mySocketId.value,
+        receiver: receiverId.value,
+        maxBitrate: currentMaxBitrate.value,
+        maxFramerate: currentMaxFramerate.value,
+        resolutionRatio: currentResolutionRatio.value,
+        videoContentHint: currentVideoContentHint.value,
+        audioContentHint: currentAudioContentHint.value,
+        deskUserUuid: deskUserUuid.value || '',
+        deskUserPassword: deskUserPassword.value || '',
+      },
+    });
+  }, 1000 * 2);
+
   isControlOther.value = true;
   window.electronAPI.ipcRenderer.send('createWindow', {
     type: 'createWindow',
     data: {
       route: routerName.webrtc,
       query: {
+        deskUserUuid: deskUserUuid.value,
+        deskUserPassword: deskUserPassword.value,
         receiverId: receiverId.value,
         width: appStore.workAreaSize.width,
         height: appStore.workAreaSize.height,

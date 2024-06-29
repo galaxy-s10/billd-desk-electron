@@ -146,6 +146,7 @@
     class="loading"
   >
     <div class="txt">loading</div>
+    <n-button @click="handleDebug">打开调试</n-button>
   </div>
 </template>
 
@@ -182,7 +183,8 @@ import {
 import { videoFullBox } from '@/utils';
 
 const route = useRoute();
-const { initWs, connectStatus } = useWebsocket();
+const { initWs, deskUserUuid, deskUserPassword, connectStatus } =
+  useWebsocket();
 const appStore = useAppStore();
 const networkStore = useNetworkStore();
 
@@ -247,6 +249,8 @@ watch(
           resolutionRatio: currentResolutionRatio.value,
           videoContentHint: currentVideoContentHint.value,
           audioContentHint: currentAudioContentHint.value,
+          deskUserUuid: deskUserUuid.value,
+          deskUserPassword: deskUserPassword.value,
         },
       });
     }
@@ -357,6 +361,7 @@ onMounted(() => {
     isRemoteDesk: true,
   });
   console.log(route.query);
+
   loopGetSettings();
   if (route.query.receiverId !== undefined) {
     receiverId.value = `${route.query.receiverId as string}`;
@@ -368,6 +373,11 @@ onMounted(() => {
   if (route.query.width && route.query.height) {
     appStore.workAreaSize.width = Number(route.query.width);
     appStore.workAreaSize.height = Number(route.query.height);
+  }
+
+  if (route.query.deskUserUuid && route.query.deskUserPassword) {
+    deskUserUuid.value = route.query.deskUserUuid as string;
+    deskUserPassword.value = route.query.deskUserPassword as string;
   }
 
   if (route.query.windowId !== undefined) {
