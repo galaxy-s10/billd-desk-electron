@@ -78,6 +78,7 @@ export const useWebsocket = () => {
   const roomLiving = ref(false);
   const isAnchor = ref(false);
   const isRemoteDesk = ref(false);
+  const remoteDeskUserUuid = ref('');
   const deskUserUuid = ref(getUuid() || '');
   const deskUserPassword = ref(getPassword() || '');
   const anchorInfo = ref<IUser>();
@@ -90,6 +91,7 @@ export const useWebsocket = () => {
   const currentResolutionRatio = ref(resolutionRatio.value[3].value);
   const timerObj = ref({});
   const damuList = ref<IDanmu[]>([]);
+  const joinedReceiver = ref('');
 
   onUnmounted(() => {
     clearInterval(loopHeartbeatTimer.value);
@@ -262,6 +264,7 @@ export const useWebsocket = () => {
         user_info: userStore.userInfo,
         deskUserUuid: deskUserUuid.value,
         deskUserPassword: deskUserPassword.value,
+        remoteDeskUserUuid: remoteDeskUserUuid.value,
       },
     });
   }
@@ -661,6 +664,7 @@ export const useWebsocket = () => {
       prettierReceiveWsMsg(WsMsgTypeEnum.joined, data);
       appStore.setLiveRoomInfo(data.live_room);
       anchorInfo.value = data.anchor_info;
+      joinedReceiver.value = data.receiver!;
     });
 
     // 其他用户加入房间
@@ -849,8 +853,10 @@ export const useWebsocket = () => {
     initWs,
     handleStartLive,
     handleSendGetLiveUser,
+    joinedReceiver,
     deskUserUuid,
     deskUserPassword,
+    remoteDeskUserUuid,
     connectStatus,
     mySocketId,
     canvasVideoStream,

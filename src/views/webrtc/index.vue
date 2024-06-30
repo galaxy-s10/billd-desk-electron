@@ -18,6 +18,7 @@
       >
         <div>wss：{{ WEBSOCKET_URL }}</div>
         <div>axios：{{ AXIOS_BASEURL }}</div>
+        <div>joinedReceiver：{{ joinedReceiver }}</div>
         <n-button @click="mockClick">mockClick</n-button>
         <n-button @click="windowReload">刷新页面</n-button>
         <n-button @click="handleDebug">打开调试</n-button>
@@ -55,6 +56,22 @@
         </n-input-group>
 
         <n-input-group>
+          <n-input-group-label>uuid</n-input-group-label>
+          <n-input
+            v-model:value="deskUserUuid"
+            :style="{ width: '200px' }"
+            disabled
+          />
+        </n-input-group>
+        <n-input-group>
+          <n-input-group-label>被控uuid</n-input-group-label>
+          <n-input
+            v-model:value="remoteDeskUserUuid"
+            :style="{ width: '200px' }"
+            disabled
+          />
+        </n-input-group>
+        <n-input-group>
           <n-button>我的设备</n-button>
           <n-input
             v-model:value="mySocketId"
@@ -67,11 +84,11 @@
         <n-input-group>
           <n-button>控制设备</n-button>
           <n-input
-            v-model:value="receiverId"
+            v-model:value="joinedReceiver"
             :style="{ width: '200px' }"
             disabled
           />
-          <n-button @click="copyToClipBoard(receiverId)">复制</n-button>
+          <n-button @click="copyToClipBoard(joinedReceiver)">复制</n-button>
         </n-input-group>
         <div class="rtc-config">
           <div class="item">
@@ -165,7 +182,6 @@ import { useRoute } from 'vue-router';
 import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
 import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useWebsocket } from '@/hooks/use-websocket';
-import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
 import {
@@ -183,15 +199,21 @@ import {
 import { videoFullBox } from '@/utils';
 
 const route = useRoute();
-const { initWs, deskUserUuid, deskUserPassword, connectStatus } =
-  useWebsocket();
+const {
+  initWs,
+  joinedReceiver,
+  remoteDeskUserUuid,
+  deskUserUuid,
+  deskUserPassword,
+  connectStatus,
+} = useWebsocket();
 const appStore = useAppStore();
 const networkStore = useNetworkStore();
 
 const titlebarHeight = ref(50);
 
-const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
-  useWebRtcRemoteDesk();
+// const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
+//   useWebRtcRemoteDesk();
 
 const {
   maxBitrate,
@@ -220,12 +242,11 @@ const videoWrapRef = ref<HTMLVideoElement>();
 const windowId = ref('');
 const num = '123456';
 const roomId = ref(num);
-const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
 const videoMap = ref(new Map());
 const showLoading = ref(true);
-const chromeMediaSourceId = ref();
+// const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
@@ -234,25 +255,49 @@ const loopGetSettingsTimer = ref();
 const videoSettings = ref<MediaTrackSettings>();
 
 watch(
+  () => joinedReceiver.value,
+  () => {
+    networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
+      requestId: getRandomString(8),
+      msgType: WsMsgTypeEnum.startRemoteDesk,
+      data: {
+        roomId: roomId.value,
+        sender: mySocketId.value,
+        receiver: joinedReceiver.value,
+        maxBitrate: currentMaxBitrate.value,
+        maxFramerate: currentMaxFramerate.value,
+        resolutionRatio: currentResolutionRatio.value,
+        videoContentHint: currentVideoContentHint.value,
+        audioContentHint: currentAudioContentHint.value,
+        deskUserUuid: deskUserUuid.value,
+        deskUserPassword: deskUserPassword.value,
+        remoteDeskUserUuid: remoteDeskUserUuid.value,
+      },
+    });
+  }
+);
+
+watch(
   () => connectStatus.value,
   (newval) => {
     if (newval === WsConnectStatusEnum.connect) {
-      networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
-        requestId: getRandomString(8),
-        msgType: WsMsgTypeEnum.startRemoteDesk,
-        data: {
-          roomId: roomId.value,
-          sender: mySocketId.value,
-          receiver: receiverId.value,
-          maxBitrate: currentMaxBitrate.value,
-          maxFramerate: currentMaxFramerate.value,
-          resolutionRatio: currentResolutionRatio.value,
-          videoContentHint: currentVideoContentHint.value,
-          audioContentHint: currentAudioContentHint.value,
-          deskUserUuid: deskUserUuid.value,
-          deskUserPassword: deskUserPassword.value,
-        },
-      });
+      // networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
+      //   requestId: getRandomString(8),
+      //   msgType: WsMsgTypeEnum.startRemoteDesk,
+      //   data: {
+      //     roomId: roomId.value,
+      //     sender: mySocketId.value,
+      //     receiver: joinedReceiver.value,
+      //     maxBitrate: currentMaxBitrate.value,
+      //     maxFramerate: currentMaxFramerate.value,
+      //     resolutionRatio: currentResolutionRatio.value,
+      //     videoContentHint: currentVideoContentHint.value,
+      //     audioContentHint: currentAudioContentHint.value,
+      //     deskUserUuid: deskUserUuid.value,
+      //     deskUserPassword: deskUserPassword.value,
+      //     remoteDeskUserUuid: remoteDeskUserUuid.value,
+      //   },
+      // });
     }
   }
 );
@@ -261,7 +306,7 @@ watch(
   () => currentMaxBitrate.value,
   (newval) => {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsChangeMaxBitrateType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.changeMaxBitrate,
@@ -276,7 +321,7 @@ watch(
   () => currentMaxFramerate.value,
   (newval) => {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsChangeMaxFramerateType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.changeMaxFramerate,
@@ -291,7 +336,7 @@ watch(
   () => currentResolutionRatio.value,
   (newval) => {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsChangeResolutionRatioType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.changeResolutionRatio,
@@ -306,7 +351,7 @@ watch(
   () => currentVideoContentHint.value,
   (newval) => {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsChangeVideoContentHintType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.changeVideoContentHint,
@@ -321,7 +366,7 @@ watch(
   () => currentAudioContentHint.value,
   (newval) => {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsChangeAudioContentHintType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.changeAudioContentHint,
@@ -340,8 +385,10 @@ function uploadChange() {
     const file = fileList[0];
     const blob = new Blob([file], { type: file.type });
 
-    console.log(networkStore.rtcMap.get(receiverId.value), 'lll1');
-    networkStore.rtcMap.get(receiverId.value)?.dataChannelSendBlob({ blob });
+    console.log(networkStore.rtcMap.get(joinedReceiver.value), 'lll1');
+    networkStore.rtcMap
+      .get(joinedReceiver.value)
+      ?.dataChannelSendBlob({ blob });
   }
 }
 
@@ -364,9 +411,16 @@ onMounted(() => {
 
   loopGetSettings();
   if (route.query.receiverId !== undefined) {
-    receiverId.value = `${route.query.receiverId as string}`;
+    joinedReceiver.value = `${route.query.receiverId as string}`;
   } else {
     window.$message.error('receiverId为空');
+    return;
+  }
+
+  if (route.query.remoteDeskUserUuid !== undefined) {
+    remoteDeskUserUuid.value = `${route.query.remoteDeskUserUuid as string}`;
+  } else {
+    window.$message.error('remoteDeskUserUuid为空');
     return;
   }
 
@@ -458,22 +512,22 @@ onMounted(() => {
   window.electronAPI.ipcRenderer.on('mouseRightClickRes', (_event, source) => {
     console.log('mouseRightClickRes', source);
   });
-  window.electronAPI.ipcRenderer.on('getScreenStreamRes', (_event, source) => {
-    console.log('收到getScreenStreamRes', source);
-    if (source.isErr) {
-      window.$message.error(source.msg);
-      return;
-    }
-    chromeMediaSourceId.value = source.stream.id;
-    handleDesktopStream(source.stream.id);
-  });
+  // window.electronAPI.ipcRenderer.on('getScreenStreamRes', (_event, source) => {
+  //   console.log('收到getScreenStreamRes', source);
+  //   if (source.isErr) {
+  //     window.$message.error(source.msg);
+  //     return;
+  //   }
+  //   chromeMediaSourceId.value = source.stream.id;
+  //   handleDesktopStream(source.stream.id);
+  // });
 });
 
 function loopGetSettings() {
   clearInterval(loopGetSettingsTimer.value);
   loopGetSettingsTimer.value = setInterval(() => {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.localStream?.getVideoTracks()
       .forEach((item) => {
         videoSettings.value = item.getSettings();
@@ -482,51 +536,51 @@ function loopGetSettings() {
   }, 1000);
 }
 
-async function handleDesktopStream(chromeMediaSourceId) {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        // @ts-ignore
-        mandatory: {
-          chromeMediaSource: 'desktop',
-          chromeMediaSourceId,
-        },
-      },
-    });
-    anchorStream.value = stream;
-    updateWebRtcRemoteDeskConfig({
-      roomId: roomId.value,
-      anchorStream: anchorStream.value,
-    });
-    webRtcRemoteDesk.newWebRtc({
-      // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
-      // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
-      sender: mySocketId.value,
-      receiver: receiverId.value,
-      videoEl: videoWrapRef.value!,
-    });
-    webRtcRemoteDesk.sendOffer({
-      sender: mySocketId.value,
-      receiver: receiverId.value,
-    });
-  } catch (err) {
-    console.log(err);
-  }
-}
+// async function handleDesktopStream(chromeMediaSourceId) {
+//   try {
+//     const stream = await navigator.mediaDevices.getUserMedia({
+//       audio: false,
+//       video: {
+//         // @ts-ignore
+//         mandatory: {
+//           chromeMediaSource: 'desktop',
+//           chromeMediaSourceId,
+//         },
+//       },
+//     });
+//     anchorStream.value = stream;
+//     updateWebRtcRemoteDeskConfig({
+//       roomId: roomId.value,
+//       anchorStream: anchorStream.value,
+//     });
+//     webRtcRemoteDesk.newWebRtc({
+//       // 因为这里是收到offer，而offer是房主发的，所以此时的data.data.sender是房主；data.data.receiver是接收者；
+//       // 但是这里的nativeWebRtc的sender，得是自己，不能是data.data.sender，不要混淆
+//       sender: mySocketId.value,
+//       receiver: joinedReceiver.value,
+//       videoEl: videoWrapRef.value!,
+//     });
+//     webRtcRemoteDesk.sendOffer({
+//       sender: mySocketId.value,
+//       receiver: joinedReceiver.value,
+//     });
+//   } catch (err) {
+//     console.log(err);
+//   }
+// }
 
 function handleMouseWheel(e: WheelEvent) {
   e.preventDefault();
   if (e.deltaY > 0) {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.remoteDeskBehavior,
         data: {
           roomId: roomId.value,
           sender: mySocketId.value,
-          receiver: receiverId.value,
+          receiver: joinedReceiver.value,
           type: RemoteDeskBehaviorEnum.scrollDown,
           keyboardtype: 0,
           x: 0,
@@ -536,14 +590,14 @@ function handleMouseWheel(e: WheelEvent) {
       });
   } else if (e.deltaY < 0) {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.remoteDeskBehavior,
         data: {
           roomId: roomId.value,
           sender: mySocketId.value,
-          receiver: receiverId.value,
+          receiver: joinedReceiver.value,
           type: RemoteDeskBehaviorEnum.scrollUp,
           keyboardtype: 0,
           x: 0,
@@ -554,14 +608,14 @@ function handleMouseWheel(e: WheelEvent) {
   }
   if (e.deltaX > 0) {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.remoteDeskBehavior,
         data: {
           roomId: roomId.value,
           sender: mySocketId.value,
-          receiver: receiverId.value,
+          receiver: joinedReceiver.value,
           type: RemoteDeskBehaviorEnum.scrollRight,
           keyboardtype: 0,
           x: 0,
@@ -571,14 +625,14 @@ function handleMouseWheel(e: WheelEvent) {
       });
   } else if (e.deltaX < 0) {
     networkStore.rtcMap
-      .get(receiverId.value)
+      .get(joinedReceiver.value)
       ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.remoteDeskBehavior,
         data: {
           roomId: roomId.value,
           sender: mySocketId.value,
-          receiver: receiverId.value,
+          receiver: joinedReceiver.value,
           type: RemoteDeskBehaviorEnum.scrollLeft,
           keyboardtype: 0,
           x: 0,
@@ -590,11 +644,11 @@ function handleMouseWheel(e: WheelEvent) {
 }
 
 function handleClose() {
-  networkStore.removeRtc(receiverId.value);
+  networkStore.removeRtc(joinedReceiver.value);
 }
 
 watch(
-  () => networkStore.rtcMap.get(receiverId.value)?.cbDataChannel,
+  () => networkStore.rtcMap.get(joinedReceiver.value)?.cbDataChannel,
   (newval) => {
     if (newval) {
       if (ioFlag.value) return;
@@ -639,9 +693,9 @@ watch(
   () => appStore.remoteDesk.size,
   (newval) => {
     if (newval) {
-      if (!anchorStream.value) {
-        handleScreen();
-      }
+      // if (!anchorStream.value) {
+      //   handleScreen();
+      // }
     } else {
       handleClose();
     }
@@ -758,14 +812,14 @@ function handleKeyDown(e: KeyboardEvent) {
   };
 
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         type: RemoteDeskBehaviorEnum.keyboardType,
         keyboardtype: keyMap[e.code] || e.key,
         x: 0,
@@ -778,14 +832,14 @@ function handleKeyDown(e: KeyboardEvent) {
 function handleDoublelclick() {
   console.log('handleDoublelclick');
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         type: RemoteDeskBehaviorEnum.doubleClick,
         keyboardtype: 0,
         x: 0,
@@ -798,14 +852,14 @@ function handleDoublelclick() {
 function handleContextmenu() {
   console.log('handleContextmenu');
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         type: RemoteDeskBehaviorEnum.rightClick,
         keyboardtype: 0,
         x: 0,
@@ -840,14 +894,14 @@ function handleMouseDown(event: MouseEvent) {
     return;
   }
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         keyboardtype: 0,
         type: isLongClick
           ? RemoteDeskBehaviorEnum.pressButtonLeft
@@ -874,14 +928,14 @@ function handleMouseMove(event: MouseEvent) {
   const y = (yInsideElement / rect.height) * 1000;
   console.log('handleMouseMove', x, y, xInsideElement, yInsideElement);
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         type: RemoteDeskBehaviorEnum.mouseMove,
         keyboardtype: 0,
         x,
@@ -914,14 +968,14 @@ function handleMouseUp(event: MouseEvent) {
     return;
   }
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         keyboardtype: 0,
         type: isLongClick
           ? RemoteDeskBehaviorEnum.releaseButtonLeft
@@ -934,9 +988,9 @@ function handleMouseUp(event: MouseEvent) {
   isLongClick = false;
 }
 
-function handleScreen() {
-  window.electronAPI.ipcRenderer.send('getScreenStream');
-}
+// function handleScreen() {
+//   window.electronAPI.ipcRenderer.send('getScreenStream');
+// }
 
 function mouseSetPosition(x, y) {
   window.electronAPI.ipcRenderer.send('mouseSetPosition', x, y);
@@ -973,14 +1027,14 @@ function handleDebug() {
 }
 function mockClick() {
   networkStore.rtcMap
-    .get(receiverId.value)
+    .get(joinedReceiver.value)
     ?.dataChannelSend<WsRemoteDeskBehaviorType['data']>({
       requestId: getRandomString(8),
       msgType: WsMsgTypeEnum.remoteDeskBehavior,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
-        receiver: receiverId.value,
+        receiver: joinedReceiver.value,
         type: RemoteDeskBehaviorEnum.mouseMove,
         keyboardtype: 0,
         x: 125,

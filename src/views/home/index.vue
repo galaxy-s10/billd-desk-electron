@@ -3,6 +3,8 @@
     <div>
       <div>
         <!-- <div v-if="NODE_ENV === 'development'"> -->
+        <div>{{ suspend }}</div>
+        <div>{{ resume }}</div>
         <div>version：{{ appStore.version }}</div>
         <div>wss：{{ WEBSOCKET_URL }}</div>
         <div>axios：{{ AXIOS_BASEURL }}</div>
@@ -31,6 +33,9 @@
           disabled
         />
         <n-button @click="handleCopy(windowId)">复制</n-button>
+        <n-button @click="handlepowerSaveBlockerStart()"
+          >powerSaveBlockerStart</n-button
+        >
       </n-input-group>
       <n-input-group>
         <n-input-group-label>uuid</n-input-group-label>
@@ -67,6 +72,14 @@
           v-model:value="receiverId"
           :style="{ width: '200px' }"
           placeholder="请输入被控设备"
+        />
+        <n-button @click="startRemote">开始远程</n-button>
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>被控uuid</n-input-group-label>
+        <n-input
+          v-model:value="remoteDeskUserUuid"
+          :style="{ width: '200px' }"
         />
         <n-button @click="startRemote">开始远程</n-button>
       </n-input-group>
@@ -238,10 +251,13 @@ const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
 });
 
+const remoteDeskUserUuid = ref('');
 const deskUserUuid = ref(getUuid());
 const deskUserPassword = ref(getPassword());
 const newpassword = ref(getPassword());
 const tiemr = ref();
+const suspend = ref('');
+const resume = ref('');
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -249,6 +265,26 @@ onUnmounted(() => {
 });
 
 onMounted(() => {
+  clearInterval(tiemr.value);
+  tiemr.value = setInterval(() => {
+    networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
+      requestId: getRandomString(8),
+      msgType: WsMsgTypeEnum.updateDeskUser,
+      data: {
+        roomId: roomId.value,
+        sender: mySocketId.value,
+        receiver: receiverId.value,
+        maxBitrate: currentMaxBitrate.value,
+        maxFramerate: currentMaxFramerate.value,
+        resolutionRatio: currentResolutionRatio.value,
+        videoContentHint: currentVideoContentHint.value,
+        audioContentHint: currentAudioContentHint.value,
+        deskUserUuid: deskUserUuid.value || '',
+        deskUserPassword: deskUserPassword.value || '',
+        remoteDeskUserUuid: remoteDeskUserUuid.value || '',
+      },
+    });
+  }, 1000 * 3);
   initUser();
   handleMainWindowSetAlwaysOnTop(true);
   initWs({
@@ -264,6 +300,19 @@ onMounted(() => {
       type: 'getMainWindowId',
     });
   }
+
+  window.electronAPI.ipcRenderer.on(
+    'powerMonitor-suspend',
+    (_event, source) => {
+      console.log('powerMonitor-suspend', source);
+      suspend.value = `${new Date().toLocaleString()}-suspend`;
+    }
+  );
+  window.electronAPI.ipcRenderer.on('powerMonitor-resume', (_event, source) => {
+    console.log('powerMonitor-resume', source);
+    resume.value = `${new Date().toLocaleString()}-resume`;
+    handleCloseAll();
+  });
 
   window.electronAPI.ipcRenderer.on('workAreaSizeRes', (_event, source) => {
     console.log('workAreaSizeRes', source);
@@ -500,31 +549,32 @@ function handleCopy(str) {
   copyToClipBoard(str);
   window.$message.success('复制成功');
 }
+function handlepowerSaveBlockerStart() {}
 
 function startRemote() {
-  if (receiverId.value === '') {
+  if (remoteDeskUserUuid.value === '') {
     window.$message.warning('请输入控制设备');
     return;
   }
-  clearInterval(tiemr.value);
-  tiemr.value = setInterval(() => {
-    networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
-      requestId: getRandomString(8),
-      msgType: WsMsgTypeEnum.updateDeskUser,
-      data: {
-        roomId: roomId.value,
-        sender: mySocketId.value,
-        receiver: receiverId.value,
-        maxBitrate: currentMaxBitrate.value,
-        maxFramerate: currentMaxFramerate.value,
-        resolutionRatio: currentResolutionRatio.value,
-        videoContentHint: currentVideoContentHint.value,
-        audioContentHint: currentAudioContentHint.value,
-        deskUserUuid: deskUserUuid.value || '',
-        deskUserPassword: deskUserPassword.value || '',
-      },
-    });
-  }, 1000 * 2);
+  // clearInterval(tiemr.value);
+  // tiemr.value = setInterval(() => {
+  //   networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
+  //     requestId: getRandomString(8),
+  //     msgType: WsMsgTypeEnum.updateDeskUser,
+  //     data: {
+  //       roomId: roomId.value,
+  //       sender: mySocketId.value,
+  //       receiver: receiverId.value,
+  //       maxBitrate: currentMaxBitrate.value,
+  //       maxFramerate: currentMaxFramerate.value,
+  //       resolutionRatio: currentResolutionRatio.value,
+  //       videoContentHint: currentVideoContentHint.value,
+  //       audioContentHint: currentAudioContentHint.value,
+  //       deskUserUuid: deskUserUuid.value || '',
+  //       deskUserPassword: deskUserPassword.value || '',
+  //     },
+  //   });
+  // }, 1000 * 1);
 
   isControlOther.value = true;
   window.electronAPI.ipcRenderer.send('createWindow', {
@@ -534,6 +584,7 @@ function startRemote() {
       query: {
         deskUserUuid: deskUserUuid.value,
         deskUserPassword: deskUserPassword.value,
+        remoteDeskUserUuid: remoteDeskUserUuid.value,
         receiverId: receiverId.value,
         width: appStore.workAreaSize.width,
         height: appStore.workAreaSize.height,

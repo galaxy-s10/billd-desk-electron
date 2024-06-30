@@ -272,6 +272,8 @@ export type WsJoinType = IWsFormat<{
   socket_list?: string[];
   deskUserUuid?: string;
   deskUserPassword?: string;
+  remoteDeskUserUuid?: string;
+  receiver?: string;
 }>;
 
 /** 用户离开直播间 */
@@ -309,6 +311,7 @@ export type WsStartRemoteDesk = IWsFormat<{
   videoContentHint: string;
   deskUserUuid?: string;
   deskUserPassword?: string;
+  remoteDeskUserUuid?: string;
 }>;
 
 export type WsOfferType = IWsFormat<{

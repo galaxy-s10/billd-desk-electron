@@ -1,7 +1,15 @@
 import path from 'path';
 import { platform } from 'process';
 
-import { BrowserWindow, app, desktopCapturer, ipcMain, screen } from 'electron';
+import {
+  BrowserWindow,
+  app,
+  desktopCapturer,
+  ipcMain,
+  powerMonitor,
+  powerSaveBlocker,
+  screen,
+} from 'electron';
 
 import { nutjsTs } from './types';
 
@@ -57,6 +65,18 @@ function createWindow() {
     frame: false,
   });
   winBounds = win.getBounds();
+  ipcMain.on('powerSaveBlockerStart', () => {
+    console.log('收到powerSaveBlockerStart');
+    try {
+      powerSaveBlocker.start('prevent-display-sleep');
+      win?.webContents.send('powerSaveBlockerStartRes', {
+        msg: 'ok',
+      });
+    } catch (error) {
+      console.log('powerSaveBlockerStart失败');
+      console.log(error);
+    }
+  });
   ipcMain.on('childWindowClose', (_event, windowId) => {
     console.log('收到childWindowClose');
     try {
@@ -573,6 +593,20 @@ function createWindow() {
   }
 }
 
+app.on('ready', () => {
+  powerMonitor.on('suspend', () => {
+    win?.webContents.send('powerMonitor-suspend');
+    childWindowMap.forEach((item) => {
+      item.webContents.send('powerMonitor-suspend');
+    });
+  });
+  powerMonitor.on('resume', () => {
+    win?.webContents.send('powerMonitor-resume');
+    childWindowMap.forEach((item) => {
+      item.webContents.send('powerMonitor-resume');
+    });
+  });
+});
 app.on('window-all-closed', () => {
   app.quit();
   win = null;
