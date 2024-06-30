@@ -252,6 +252,7 @@ const mySocketId = computed(() => {
 });
 
 const loopGetSettingsTimer = ref();
+const loopReconnectTimer = ref();
 const videoSettings = ref<MediaTrackSettings>();
 
 watch(
@@ -281,6 +282,7 @@ watch(
   () => connectStatus.value,
   (newval) => {
     if (newval === WsConnectStatusEnum.connect) {
+      clearInterval(loopReconnectTimer.value);
       // networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
       //   requestId: getRandomString(8),
       //   msgType: WsMsgTypeEnum.startRemoteDesk,
@@ -298,6 +300,8 @@ watch(
       //     remoteDeskUserUuid: remoteDeskUserUuid.value,
       //   },
       // });
+    } else if (newval === WsConnectStatusEnum.disconnect) {
+      window.$message.warning('disconnect');
     }
   }
 );
@@ -442,17 +446,17 @@ onMounted(() => {
     });
   }
 
+  window.electronAPI.ipcRenderer.send(
+    'getChildWindowTitlebarHeight',
+    windowId.value
+  );
+
   window.electronAPI.ipcRenderer.on(
     'getChildWindowTitlebarHeightRes',
     (_event, source) => {
       console.log('getChildWindowTitlebarHeightRes', source);
       titlebarHeight.value = source.titlebarHeight;
     }
-  );
-
-  window.electronAPI.ipcRenderer.send(
-    'getChildWindowTitlebarHeight',
-    windowId.value
   );
 
   window.electronAPI.ipcRenderer.on('childWindowClose', () => {
@@ -463,10 +467,6 @@ onMounted(() => {
   window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
     console.log('getMainWindowIdRes', source);
     windowId.value = `${source.id as string}`;
-  });
-
-  window.electronAPI.ipcRenderer.on('openRemote', (_event, source) => {
-    console.log('openRemote', source);
   });
 
   window.electronAPI.ipcRenderer.on('createWindowRes', (_event, source) => {
@@ -512,15 +512,6 @@ onMounted(() => {
   window.electronAPI.ipcRenderer.on('mouseRightClickRes', (_event, source) => {
     console.log('mouseRightClickRes', source);
   });
-  // window.electronAPI.ipcRenderer.on('getScreenStreamRes', (_event, source) => {
-  //   console.log('收到getScreenStreamRes', source);
-  //   if (source.isErr) {
-  //     window.$message.error(source.msg);
-  //     return;
-  //   }
-  //   chromeMediaSourceId.value = source.stream.id;
-  //   handleDesktopStream(source.stream.id);
-  // });
 });
 
 function loopGetSettings() {
@@ -646,6 +637,27 @@ function handleMouseWheel(e: WheelEvent) {
 function handleClose() {
   networkStore.removeRtc(joinedReceiver.value);
 }
+
+watch(
+  () => appStore.remoteDesk.get(joinedReceiver.value)?.isClose,
+  (newval) => {
+    // window.$message.warning(newval);
+    console.log('ee', appStore.remoteDesk.get(joinedReceiver.value));
+
+    if (newval) {
+      window.$message.warning('dddd');
+      const ws = networkStore.wsMap.get(roomId.value);
+      ws?.close();
+      loopReconnectTimer.value = setInterval(() => {
+        initWs({
+          roomId: roomId.value,
+          isAnchor: false,
+          isRemoteDesk: true,
+        });
+      }, 1000);
+    }
+  }
+);
 
 watch(
   () => networkStore.rtcMap.get(joinedReceiver.value)?.cbDataChannel,

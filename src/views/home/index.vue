@@ -284,7 +284,7 @@ onMounted(() => {
         remoteDeskUserUuid: remoteDeskUserUuid.value || '',
       },
     });
-  }, 1000 * 3);
+  }, 1000 * 1);
   initUser();
   handleMainWindowSetAlwaysOnTop(true);
   initWs({

@@ -288,6 +288,7 @@ export const useWebsocket = () => {
       prettierReceiveWsMsg(WsConnectStatusEnum.disconnect, ws);
       console.error('websocket连接断开', err);
       if (!ws) return;
+      connectStatus.value = WsConnectStatusEnum.disconnect;
       ws.status = WsConnectStatusEnum.disconnect;
       ws.update();
     });
