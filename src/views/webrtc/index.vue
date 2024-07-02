@@ -641,11 +641,8 @@ function handleClose() {
 watch(
   () => appStore.remoteDesk.get(joinedReceiver.value)?.isClose,
   (newval) => {
-    // window.$message.warning(newval);
-    console.log('ee', appStore.remoteDesk.get(joinedReceiver.value));
-
+    window.$message.warning(`isClose-${newval}`);
     if (newval) {
-      window.$message.warning('dddd');
       const ws = networkStore.wsMap.get(roomId.value);
       ws?.close();
       loopReconnectTimer.value = setInterval(() => {

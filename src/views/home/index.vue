@@ -2,7 +2,6 @@
   <div>
     <div>
       <div>
-        <!-- <div v-if="NODE_ENV === 'development'"> -->
         <div>{{ suspend }}</div>
         <div>{{ resume }}</div>
         <div>version：{{ appStore.version }}</div>
@@ -26,6 +25,15 @@
         </div>
       </div>
       <n-input-group>
+        <n-input-group-label>socketid</n-input-group-label>
+        <n-input
+          v-model:value="mySocketId"
+          :style="{ width: '200px' }"
+          disabled
+        />
+        <n-button @click="handleCopy(mySocketId)">复制</n-button>
+      </n-input-group>
+      <n-input-group>
         <n-input-group-label>窗口id</n-input-group-label>
         <n-input
           v-model:value="windowId"
@@ -33,9 +41,6 @@
           disabled
         />
         <n-button @click="handleCopy(windowId)">复制</n-button>
-        <n-button @click="handlepowerSaveBlockerStart()"
-          >powerSaveBlockerStart</n-button
-        >
       </n-input-group>
       <n-input-group>
         <n-input-group-label>uuid</n-input-group-label>
@@ -55,25 +60,6 @@
           @blur="handleUpdatePassword"
         />
         <n-button @click="handleCopy(newpassword)">复制</n-button>
-      </n-input-group>
-      <n-input-group>
-        <n-input-group-label>我的设备</n-input-group-label>
-        <n-input
-          v-model:value="mySocketId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="handleCopy(mySocketId)">复制</n-button>
-      </n-input-group>
-
-      <n-input-group>
-        <n-input-group-label>被控设备</n-input-group-label>
-        <n-input
-          v-model:value="receiverId"
-          :style="{ width: '200px' }"
-          placeholder="请输入被控设备"
-        />
-        <n-button @click="startRemote">开始远程</n-button>
       </n-input-group>
       <n-input-group>
         <n-input-group-label>被控uuid</n-input-group-label>
@@ -549,7 +535,6 @@ function handleCopy(str) {
   copyToClipBoard(str);
   window.$message.success('复制成功');
 }
-function handlepowerSaveBlockerStart() {}
 
 function startRemote() {
   if (remoteDeskUserUuid.value === '') {

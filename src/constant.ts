@@ -24,18 +24,33 @@ export const appBuildInfo =
 
 export const NODE_ENV = process.env.NODE_ENV;
 
+// ======本地调试=====
+
+const localhostIp = '192.168.12.253:4300';
+
 export const WEBSOCKET_URL =
   process.env.NODE_ENV === 'development'
-    ? `ws://localhost:4300` // `ws://localhost:4300`
-    : `ws://192.168.1.101:4300`;
+    ? `ws://localhost:4300`
+    : `ws://${localhostIp}`;
+
+export const AXIOS_BASEURL =
+  process.env.NODE_ENV === 'development' ? `/api` : `http://${localhostIp}`;
+
+// ======本地调试=====
+
+// ======线上正式=====
 
 // export const WEBSOCKET_URL =
 //   process.env.NODE_ENV === 'development'
-//     ? `ws://localhost:4300` // `ws://localhost:4300`
+//     ? `ws://localhost:4300`
 //     : `wss://srs-pull.${prodDomain}`;
 
-export const AXIOS_BASEURL =
-  process.env.NODE_ENV === 'development' ? `/api` : `http://192.168.1.101:4300`; // `https://live-api.${prodDomain}`
+// export const AXIOS_BASEURL =
+//   process.env.NODE_ENV === 'development'
+//     ? `/api`
+//     : `https://live-api.${prodDomain}`;
+
+// ======线上正式=====
 
 export const COOKIE_DOMAIN =
   process.env.NODE_ENV === 'development' ? undefined : `.${prodDomain}`;
