@@ -1,6 +1,9 @@
 import { IDeskUser } from '@/types/IUser';
 import request from '@/utils/request';
 
+export function fetchFindReceiverByUuid(uuid) {
+  return request.get(`/desk_user/find_receiver_by_uuid`, { params: { uuid } });
+}
 export function fetchDeskUserLogin(data: IDeskUser) {
   return request.post<IDeskUser>(`/desk_user/login`, data);
 }

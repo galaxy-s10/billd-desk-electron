@@ -179,6 +179,7 @@ import {
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { fetchFindReceiverByUuid } from '@/api/deskUser';
 import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
 import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useWebsocket } from '@/hooks/use-websocket';
@@ -638,20 +639,28 @@ function handleClose() {
   networkStore.removeRtc(joinedReceiver.value);
 }
 
+function reInit() {
+  const ws = networkStore.wsMap.get(roomId.value);
+  ws?.close();
+  loopReconnectTimer.value = setInterval(async () => {
+    const res = await fetchFindReceiverByUuid(remoteDeskUserUuid.value);
+    console.log(res);
+    if (res.data.receiver !== '') {
+      initWs({
+        roomId: roomId.value,
+        isAnchor: false,
+        isRemoteDesk: true,
+      });
+    }
+  }, 1000);
+}
+
 watch(
   () => appStore.remoteDesk.get(joinedReceiver.value)?.isClose,
   (newval) => {
     window.$message.warning(`isClose-${newval}`);
     if (newval) {
-      const ws = networkStore.wsMap.get(roomId.value);
-      ws?.close();
-      loopReconnectTimer.value = setInterval(() => {
-        initWs({
-          roomId: roomId.value,
-          isAnchor: false,
-          isRemoteDesk: true,
-        });
-      }, 1000);
+      reInit();
     }
   }
 );
