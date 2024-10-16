@@ -26,7 +26,7 @@ export const NODE_ENV = process.env.NODE_ENV;
 
 // ======本地调试=====
 
-const localhostIp = '192.168.12.253:4300';
+const localhostIp = '10.10.20.99:4300';
 
 export const WEBSOCKET_URL =
   process.env.NODE_ENV === 'development'

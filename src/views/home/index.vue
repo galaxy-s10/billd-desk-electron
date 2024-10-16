@@ -25,60 +25,72 @@
         </div>
       </div>
       <n-input-group>
-        <n-input-group-label>socketid</n-input-group-label>
-        <n-input
-          v-model:value="mySocketId"
-          :style="{ width: '200px' }"
-          disabled
-        />
-        <n-button @click="handleCopy(mySocketId)">复制</n-button>
-      </n-input-group>
-      <n-input-group>
         <n-input-group-label>窗口id</n-input-group-label>
         <n-input
           v-model:value="windowId"
           :style="{ width: '200px' }"
+          placeholder=""
           disabled
         />
         <n-button @click="handleCopy(windowId)">复制</n-button>
       </n-input-group>
       <n-input-group>
-        <n-input-group-label>uuid</n-input-group-label>
+        <n-input-group-label>roomId</n-input-group-label>
         <n-input
-          v-model:value="deskUserUuid"
+          v-model:value="roomId"
           :style="{ width: '200px' }"
           disabled
+          placeholder=""
         />
-        <n-button @click="handleCopy(deskUserUuid)">复制</n-button>
-        <n-button @click="handleReset">重置</n-button>
+        <n-button @click="handleCopy(roomId)">复制</n-button>
       </n-input-group>
       <n-input-group>
-        <n-input-group-label>password</n-input-group-label>
+        <n-input-group-label>socketId</n-input-group-label>
         <n-input
-          v-model:value="newpassword"
+          v-model:value="mySocketId"
+          :style="{ width: '200px' }"
+          placeholder=""
+          disabled
+        />
+        <n-button @click="handleCopy(mySocketId)">复制</n-button>
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>主控uuid</n-input-group-label>
+        <n-input
+          v-model:value="cacheStore.deskUserUuid"
+          :style="{ width: '200px' }"
+          placeholder=""
+          disabled
+        />
+        <n-button @click="handleCopy(cacheStore.deskUserUuid)">复制</n-button>
+        <n-button @click="handleResetDeskuuid">重置</n-button>
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>主控密码</n-input-group-label>
+        <n-input
+          v-model:value="cacheStore.deskUserPassword"
           :style="{ width: '200px' }"
           @blur="handleUpdatePassword"
+          placeholder=""
         />
-        <n-button @click="handleCopy(newpassword)">复制</n-button>
+        <n-button @click="handleCopy(cacheStore.deskUserPassword)">
+          复制
+        </n-button>
       </n-input-group>
       <n-input-group>
         <n-input-group-label>被控uuid</n-input-group-label>
         <n-input
-          v-model:value="remoteDeskUserUuid"
+          v-model:value="cacheStore.remoteDeskUserUuid"
           :style="{ width: '200px' }"
+          placeholder=""
         />
-        <n-button @click="startRemote">开始远程</n-button>
-      </n-input-group>
-      <div v-if="!appStore.remoteDesk.size">等待被控</div>
-      <div v-else>
-        正在被{{ appStore.remoteDesk.size }}个用户控制
         <n-button
-          type="error"
-          @click="handleCloseAll"
+          @click="startRemote"
+          type="primary"
         >
-          断开所有远程
+          开始远程
         </n-button>
-      </div>
+      </n-input-group>
     </div>
     <div class="rtc-config">
       <div class="item">
@@ -134,6 +146,16 @@
         </div>
       </div>
     </div>
+    <div v-if="!appStore.remoteDesk.size">等待被控</div>
+    <div v-else>
+      正在被{{ appStore.remoteDesk.size }}个用户控制
+      <n-button
+        type="error"
+        @click="handleCloseAll"
+      >
+        断开所有远程
+      </n-button>
+    </div>
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
@@ -173,13 +195,18 @@ import {
   WEB_DESK_URL,
 } from '@/constant';
 import { useRTCParams } from '@/hooks/use-rtcParams';
+import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { routerName } from '@/router';
 import { useAppStore } from '@/store/app';
+import { usePiniaCacheStore } from '@/store/cache';
 import { useNetworkStore } from '@/store/network';
 import {
-  RemoteDeskBehaviorEnum,
+  BilldDeskBehaviorEnum,
+  WsBilldDeskBehaviorType,
+  WsBilldDeskStartRemote,
+  WsBilldDeskStartRemoteResult,
   WsChangeAudioContentHintType,
   WsChangeMaxBitrateType,
   WsChangeMaxFramerateType,
@@ -187,8 +214,6 @@ import {
   WsChangeVideoContentHintType,
   WsConnectStatusEnum,
   WsMsgTypeEnum,
-  WsRemoteDeskBehaviorType,
-  WsStartRemoteDesk,
 } from '@/types/websocket';
 import {
   createNullVideo,
@@ -196,18 +221,13 @@ import {
   setAudioTrackContentHints,
   setVideoTrackContentHints,
 } from '@/utils';
-import {
-  getPassword,
-  getUuid,
-  setPassword,
-  setUuid,
-} from '@/utils/localStorage/user';
 import { WebRTCClass } from '@/utils/network/webRTC';
 
 const route = useRoute();
 const { initWs, connectStatus } = useWebsocket();
 const appStore = useAppStore();
 const networkStore = useNetworkStore();
+const cacheStore = usePiniaCacheStore();
 
 const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
   useWebRtcRemoteDesk();
@@ -225,37 +245,34 @@ const currentResolutionRatio = ref(resolutionRatio.value[3].value);
 const currentVideoContentHint = ref(videoContentHint.value[3].value);
 const currentAudioContentHint = ref(audioContentHint.value[0].value);
 const rtc = ref<WebRTCClass>();
-const windowId = ref();
-const num = '123456';
-const roomId = ref(num);
+const windowId = ref('');
+const roomId = ref('');
 const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 /** 是否控制别人 */
 const isControlOther = ref(false);
 const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
-  return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
+  return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '';
 });
 
-const remoteDeskUserUuid = ref('');
-const deskUserUuid = ref(getUuid());
-const deskUserPassword = ref(getPassword());
-const newpassword = ref(getPassword());
-const tiemr = ref();
+const originalPassword = ref('');
+const loopBilldDeskUpdateUserTimer = ref();
 const suspend = ref('');
 const resume = ref('');
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
   handleCloseAll();
+  clearInterval(loopBilldDeskUpdateUserTimer.value);
 });
 
-onMounted(() => {
-  clearInterval(tiemr.value);
-  tiemr.value = setInterval(() => {
-    networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
+function handleLoopBilldDeskUpdateUserTimer() {
+  clearInterval(loopBilldDeskUpdateUserTimer.value);
+  loopBilldDeskUpdateUserTimer.value = setInterval(() => {
+    networkStore.wsMap.get(roomId.value)?.send<WsBilldDeskStartRemote['data']>({
       requestId: getRandomString(8),
-      msgType: WsMsgTypeEnum.updateDeskUser,
+      msgType: WsMsgTypeEnum.billdDeskUpdateUser,
       data: {
         roomId: roomId.value,
         sender: mySocketId.value,
@@ -265,27 +282,30 @@ onMounted(() => {
         resolutionRatio: currentResolutionRatio.value,
         videoContentHint: currentVideoContentHint.value,
         audioContentHint: currentAudioContentHint.value,
-        deskUserUuid: deskUserUuid.value || '',
-        deskUserPassword: deskUserPassword.value || '',
-        remoteDeskUserUuid: remoteDeskUserUuid.value || '',
+        deskUserUuid: cacheStore.deskUserUuid,
+        deskUserPassword: cacheStore.deskUserPassword,
+        remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
       },
     });
-  }, 1000 * 1);
-  initUser();
+  }, 1000 * 2);
+}
+
+async function handleInit() {
+  await initUser();
+  handleLoopBilldDeskUpdateUserTimer();
   handleMainWindowSetAlwaysOnTop(true);
   initWs({
     roomId: roomId.value,
     isAnchor: false,
     isRemoteDesk: true,
   });
-  console.log(route.query);
-  if (route.query.windowId !== undefined) {
-    windowId.value = `${route.query.windowId as string}`;
-  } else {
-    window.electronAPI.ipcRenderer.send('getMainWindowId', {
-      type: 'getMainWindowId',
-    });
-  }
+}
+onMounted(() => {
+  console.log('route.query', route.query);
+  handleInit();
+  window.electronAPI.ipcRenderer.send('getMainWindowId', {
+    type: 'getMainWindowId',
+  });
 
   window.electronAPI.ipcRenderer.on(
     'powerMonitor-suspend',
@@ -394,43 +414,37 @@ onMounted(() => {
 });
 
 async function initUser() {
-  if (!deskUserUuid.value || !deskUserPassword.value) {
+  if (!cacheStore.deskUserUuid || !cacheStore.deskUserPassword) {
     console.log('生成账号');
     const res = await fetchDeskUserCreate();
     if (res.code === 200) {
-      deskUserUuid.value = res.data.uuid!;
-      deskUserPassword.value = res.data.password!;
-      newpassword.value = res.data.password!;
-      setUuid(res.data.uuid!);
-      setPassword(res.data.password!);
+      cacheStore.deskUserUuid = res.data.uuid!;
+      cacheStore.deskUserPassword = res.data.password!;
+      originalPassword.value = res.data.password!;
+      roomId.value = cacheStore.deskUserUuid;
     }
   } else {
     const res = await fetchDeskUserLogin({
-      uuid: deskUserUuid.value,
-      password: deskUserPassword.value,
+      uuid: cacheStore.deskUserUuid,
+      password: cacheStore.deskUserPassword,
     });
     if (res.code === 200) {
-      setUuid(deskUserUuid.value);
-      setPassword(deskUserPassword.value);
+      roomId.value = cacheStore.deskUserUuid;
     }
   }
 }
 
 async function handleUpdatePassword() {
   if (
-    newpassword.value &&
-    newpassword.value.length > 6 &&
-    newpassword.value.length < 12
+    cacheStore.deskUserPassword &&
+    cacheStore.deskUserPassword.length > 6 &&
+    cacheStore.deskUserPassword.length < 12
   ) {
-    const res = await fetchDeskUserUpdateByUuid({
-      uuid: deskUserUuid.value!,
-      password: deskUserPassword.value!,
-      new_password: newpassword.value!,
+    await fetchDeskUserUpdateByUuid({
+      uuid: cacheStore.deskUserUuid!,
+      password: originalPassword.value,
+      new_password: cacheStore.deskUserPassword!,
     });
-    if (res.code === 200) {
-      setUuid(deskUserUuid.value!);
-      setPassword(newpassword.value);
-    }
     window.$message.success('更新密码成功！');
   } else {
     window.$message.warning('密码长度要求6-12位！');
@@ -450,22 +464,34 @@ watch(
 function handleWsMsg() {
   const ws = networkStore.wsMap.get(roomId.value);
   if (!ws?.socketIo) return;
-  // 收到startRemoteDesk
-  ws.socketIo.on(WsMsgTypeEnum.startRemoteDesk, (data: WsStartRemoteDesk) => {
-    console.log('收到startRemoteDesk', JSON.stringify(data));
-    if (data.data.receiver === mySocketId.value) {
-      appStore.remoteDesk.set(data.data.sender, {
-        sender: data.data.sender,
-        isClose: false,
-        maxBitrate: data.data.maxBitrate,
-        maxFramerate: data.data.maxFramerate,
-        resolutionRatio: data.data.resolutionRatio,
-        videoContentHint: data.data.videoContentHint,
-        audioContentHint: data.data.audioContentHint,
-      });
-      handleRTC(data.data.sender);
+  // 收到billdDeskStartRemoteResult
+  ws.socketIo.on(
+    WsMsgTypeEnum.billdDeskStartRemoteResult,
+    (data: WsBilldDeskStartRemoteResult['data']) => {
+      console.log('收到billdDeskStartRemoteResult', data);
+      if (data.code !== 0) {
+        useTip({
+          content: data.msg,
+          hiddenCancel: true,
+          hiddenClose: true,
+        });
+      } else {
+        if (!data.data) return;
+        if (data.data.receiver === mySocketId.value) {
+          appStore.remoteDesk.set(data.data.sender, {
+            sender: data.data.sender,
+            isClose: false,
+            maxBitrate: data.data.maxBitrate,
+            maxFramerate: data.data.maxFramerate,
+            resolutionRatio: data.data.resolutionRatio,
+            videoContentHint: data.data.videoContentHint,
+            audioContentHint: data.data.audioContentHint,
+          });
+          handleRTC(data.data.sender);
+        }
+      }
     }
-  });
+  );
 }
 
 async function handleDesktopStream(chromeMediaSourceId) {
@@ -481,7 +507,6 @@ async function handleDesktopStream(chromeMediaSourceId) {
       },
     });
     anchorStream.value = stream;
-    // handleRTC();
   } catch (err) {
     console.log(err);
   }
@@ -525,10 +550,11 @@ async function handleRTC(receiver) {
   }
 }
 
-function handleReset() {
-  deskUserUuid.value = '';
-  deskUserPassword.value = '';
-  initUser();
+async function handleResetDeskuuid() {
+  cacheStore.deskUserUuid = '';
+  cacheStore.deskUserPassword = '';
+  await initUser();
+  windowReload();
 }
 
 function handleCopy(str) {
@@ -537,29 +563,10 @@ function handleCopy(str) {
 }
 
 function startRemote() {
-  if (remoteDeskUserUuid.value === '') {
-    window.$message.warning('请输入控制设备');
+  if (cacheStore.remoteDeskUserUuid === '') {
+    window.$message.warning('请输入被控uuid');
     return;
   }
-  // clearInterval(tiemr.value);
-  // tiemr.value = setInterval(() => {
-  //   networkStore.wsMap.get(roomId.value)?.send<WsStartRemoteDesk['data']>({
-  //     requestId: getRandomString(8),
-  //     msgType: WsMsgTypeEnum.updateDeskUser,
-  //     data: {
-  //       roomId: roomId.value,
-  //       sender: mySocketId.value,
-  //       receiver: receiverId.value,
-  //       maxBitrate: currentMaxBitrate.value,
-  //       maxFramerate: currentMaxFramerate.value,
-  //       resolutionRatio: currentResolutionRatio.value,
-  //       videoContentHint: currentVideoContentHint.value,
-  //       audioContentHint: currentAudioContentHint.value,
-  //       deskUserUuid: deskUserUuid.value || '',
-  //       deskUserPassword: deskUserPassword.value || '',
-  //     },
-  //   });
-  // }, 1000 * 1);
 
   isControlOther.value = true;
   window.electronAPI.ipcRenderer.send('createWindow', {
@@ -567,12 +574,18 @@ function startRemote() {
     data: {
       route: routerName.webrtc,
       query: {
-        deskUserUuid: deskUserUuid.value,
-        deskUserPassword: deskUserPassword.value,
-        remoteDeskUserUuid: remoteDeskUserUuid.value,
+        roomId: cacheStore.remoteDeskUserUuid,
+        deskUserUuid: cacheStore.deskUserUuid,
+        deskUserPassword: cacheStore.deskUserPassword,
+        remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
         receiverId: receiverId.value,
         width: appStore.workAreaSize.width,
         height: appStore.workAreaSize.height,
+        maxBitrate: currentMaxBitrate.value,
+        maxFramerate: currentMaxFramerate.value,
+        resolutionRatio: currentResolutionRatio.value,
+        audioContentHint: currentAudioContentHint.value,
+        videoContentHint: currentVideoContentHint.value,
       },
       x: 0,
       y: 0,
@@ -648,8 +661,8 @@ watch(
             // @ts-ignore
             setAudioTrackContentHints(anchorStream.value, data.val);
           }
-        } else if (msgType === WsMsgTypeEnum.remoteDeskBehavior) {
-          const { data }: { data: WsRemoteDeskBehaviorType['data'] } = jsondata;
+        } else if (msgType === WsMsgTypeEnum.billdDeskBehavior) {
+          const { data }: { data: WsBilldDeskBehaviorType['data'] } = jsondata;
           if (appStore.primaryDisplaySize) {
             const x =
               (appStore.primaryDisplaySize.width || 0) * (data.x / 1000);
@@ -660,31 +673,31 @@ watch(
               appStore.primaryDisplaySize,
               '----'
             );
-            if (data.type === RemoteDeskBehaviorEnum.setPosition) {
+            if (data.type === BilldDeskBehaviorEnum.setPosition) {
               mouseSetPosition(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.mouseMove) {
+            } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {
               mouseMove(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.mouseDrag) {
+            } else if (data.type === BilldDeskBehaviorEnum.mouseDrag) {
               mouseDrag(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.leftClick) {
+            } else if (data.type === BilldDeskBehaviorEnum.leftClick) {
               mouseLeftClick(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.rightClick) {
+            } else if (data.type === BilldDeskBehaviorEnum.rightClick) {
               mouseRightClick(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.doubleClick) {
+            } else if (data.type === BilldDeskBehaviorEnum.doubleClick) {
               mouseDoubleClick(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.pressButtonLeft) {
+            } else if (data.type === BilldDeskBehaviorEnum.pressButtonLeft) {
               mousePressButtonLeft(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.releaseButtonLeft) {
+            } else if (data.type === BilldDeskBehaviorEnum.releaseButtonLeft) {
               mouseReleaseButtonLeft(x, y);
-            } else if (data.type === RemoteDeskBehaviorEnum.keyboardType) {
+            } else if (data.type === BilldDeskBehaviorEnum.keyboardType) {
               keyboardType(data.keyboardtype);
-            } else if (data.type === RemoteDeskBehaviorEnum.scrollDown) {
+            } else if (data.type === BilldDeskBehaviorEnum.scrollDown) {
               mouseScrollDown(data.amount);
-            } else if (data.type === RemoteDeskBehaviorEnum.scrollUp) {
+            } else if (data.type === BilldDeskBehaviorEnum.scrollUp) {
               mouseScrollUp(data.amount);
-            } else if (data.type === RemoteDeskBehaviorEnum.scrollLeft) {
+            } else if (data.type === BilldDeskBehaviorEnum.scrollLeft) {
               mouseScrollLeft(data.amount);
-            } else if (data.type === RemoteDeskBehaviorEnum.scrollRight) {
+            } else if (data.type === BilldDeskBehaviorEnum.scrollRight) {
               mouseScrollRight(data.amount);
             }
           }

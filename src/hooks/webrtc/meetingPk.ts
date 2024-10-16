@@ -134,7 +134,7 @@ export const useWebRtcMeetingPk = () => {
             requestId: getRandomString(8),
             msgType: WsMsgTypeEnum.nativeWebRtcAnswer,
             data: {
-              live_room_id: Number(roomId.value),
+              live_room_id: roomId.value,
               sender,
               receiver,
               sdp: answerSdp,

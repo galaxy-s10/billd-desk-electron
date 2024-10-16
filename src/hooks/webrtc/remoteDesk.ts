@@ -88,7 +88,6 @@ export const useWebRtcRemoteDesk = () => {
             data: {
               isRemoteDesk: true,
               live_room: appStore.liveRoomInfo!,
-              // @ts-ignore
               live_room_id: roomId.value,
               sender,
               receiver,
@@ -141,7 +140,7 @@ export const useWebRtcRemoteDesk = () => {
             requestId: getRandomString(8),
             msgType: WsMsgTypeEnum.nativeWebRtcAnswer,
             data: {
-              live_room_id: Number(roomId.value),
+              live_room_id: roomId.value,
               sender,
               receiver,
               sdp: answerSdp,

@@ -13,7 +13,7 @@ import {
 
 import { nutjsTs } from './types';
 
-const nutjs: nutjsTs = require('@nut-tree/nut-js');
+const nutjs: nutjsTs = require('@nut-tree-fork/nut-js');
 
 // 该版本electron所对应的node版本
 console.log('process.version', process.version);

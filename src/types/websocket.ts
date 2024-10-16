@@ -67,13 +67,6 @@ export enum WsMsgTypeEnum {
   srsAnswer = 'srsAnswer',
   srsCandidate = 'srsCandidate',
 
-  startRemoteDesk = 'startRemoteDesk',
-  remoteDeskBehavior = 'remoteDeskBehavior',
-
-  remoteDeskOffer = 'remoteDeskOffer',
-  remoteDeskAnswer = 'remoteDeskAnswer',
-  remoteDeskCandidate = 'remoteDeskCandidate',
-
   nativeWebRtcOffer = 'nativeWebRtcOffer',
   nativeWebRtcAnswer = 'nativeWebRtcAnswer',
   nativeWebRtcCandidate = 'nativeWebRtcCandidate',
@@ -88,7 +81,39 @@ export enum WsMsgTypeEnum {
   changeVideoContentHint = 'changeVideoContentHint',
   changeAudioContentHint = 'changeAudioContentHint',
 
-  updateDeskUser = 'updateDeskUser',
+  billdDeskJoin = 'billdDeskJoin',
+  billdDeskJoined = 'billdDeskJoined',
+  billdDeskUpdateUser = 'billdDeskUpdateUser',
+  billdDeskStartRemote = 'billdDeskStartRemote',
+  billdDeskStartRemoteResult = 'billdDeskStartRemoteResult',
+  billdDeskBehavior = 'billdDeskBehavior',
+  billdDeskOffer = 'billdDeskOffer',
+  billdDeskAnswer = 'billdDeskAnswer',
+  billdDeskCandidate = 'billdDeskCandidate',
+}
+
+/** 发送消息统一格式 */
+export interface IReqWsFormat<T> {
+  /** 消息id */
+  request_id: string;
+  /** 用户socket_id */
+  socket_id: string;
+  /** 用户信息 */
+  user_info?: IUser;
+  /** 用户token */
+  user_token?: string;
+  /** 消息时间戳 */
+  time: number;
+  data: T;
+}
+
+/** 接收消息统一格式 */
+export interface IResWsFormat<T> {
+  /** 消息id */
+  request_id: string;
+  /** 消息时间戳 */
+  time: number;
+  data: T;
 }
 
 export interface IWsFormat<T> {
@@ -161,36 +186,6 @@ export type WsRoomLivingType = IWsFormat<{
 /** 直播间没在直播 */
 export type WsRoomNoLiveType = IWsFormat<{
   live_room: ILiveRoom;
-}>;
-
-export enum RemoteDeskBehaviorEnum {
-  mouseMove,
-  mouseDrag,
-  pressButtonLeft,
-  pressButtonRight,
-  releaseButtonLeft,
-  releaseButtonRight,
-  setPosition,
-  doubleClick,
-  leftClick,
-  rightClick,
-  scrollDown,
-  scrollUp,
-  scrollLeft,
-  scrollRight,
-
-  keyboardType,
-}
-
-export type WsRemoteDeskBehaviorType = IWsFormat<{
-  roomId: string;
-  sender: string;
-  receiver: string;
-  type: RemoteDeskBehaviorEnum;
-  x: number;
-  y: number;
-  keyboardtype: string | number;
-  amount: number;
 }>;
 
 export interface IDanmu {
@@ -283,10 +278,8 @@ export type WsLeavedType = IWsFormat<{
 }>;
 
 /** 心跳检测 */
-export type WsHeartbeatType = IWsFormat<{
-  socket_id: string;
+export type WsHeartbeatType = IReqWsFormat<{
   live_room_id: number;
-  roomLiving?: boolean;
 }>;
 
 /** msr直播发送blob */
@@ -300,7 +293,51 @@ export type WsMsrBlobType = IWsFormat<{
   max_delay: number;
 }>;
 
-export type WsStartRemoteDesk = IWsFormat<{
+export type WsOfferType = IReqWsFormat<{
+  live_room: ILiveRoom;
+  sdp: any;
+  sender: string;
+  receiver: string;
+  live_room_id: number | string;
+  isRemoteDesk?: boolean;
+}>;
+
+export type WsAnswerType = IReqWsFormat<{
+  sdp: any;
+  sender: string;
+  receiver: string;
+  live_room_id: number | string;
+}>;
+
+export type WsCandidateType = IReqWsFormat<{
+  live_room_id: number | string;
+  candidate: RTCIceCandidate;
+  receiver: string;
+  sender: string;
+}>;
+
+// ==========
+
+export enum BilldDeskBehaviorEnum {
+  mouseMove,
+  mouseDrag,
+  pressButtonLeft,
+  pressButtonRight,
+  releaseButtonLeft,
+  releaseButtonRight,
+  setPosition,
+  doubleClick,
+  leftClick,
+  rightClick,
+  scrollDown,
+  scrollUp,
+  scrollLeft,
+  scrollRight,
+
+  keyboardType,
+}
+
+export type WsBilldDeskStartRemote = IReqWsFormat<{
   sender: string;
   receiver: string;
   roomId: string;
@@ -309,30 +346,36 @@ export type WsStartRemoteDesk = IWsFormat<{
   resolutionRatio: number;
   audioContentHint: string;
   videoContentHint: string;
-  deskUserUuid?: string;
-  deskUserPassword?: string;
-  remoteDeskUserUuid?: string;
+  deskUserUuid: string;
+  deskUserPassword: string;
+  remoteDeskUserUuid: string;
 }>;
 
-export type WsOfferType = IWsFormat<{
-  live_room: ILiveRoom;
-  sdp: any;
+export type WsBilldDeskBehaviorType = IReqWsFormat<{
+  roomId: string;
   sender: string;
   receiver: string;
-  live_room_id: number;
-  isRemoteDesk?: boolean;
+  type: BilldDeskBehaviorEnum;
+  x: number;
+  y: number;
+  amount: number;
+  keyboardtype: string | number;
 }>;
 
-export type WsAnswerType = IWsFormat<{
-  sdp: any;
-  sender: string;
-  receiver: string;
-  live_room_id: number;
+/** 用户加入直播间 */
+export type WsBilldDeskJoinType = IReqWsFormat<{
+  deskUserUuid: string;
+  deskUserPassword: string;
+  live_room_id: string;
 }>;
 
-export type WsCandidateType = IWsFormat<{
-  live_room_id: number;
-  candidate: RTCIceCandidate;
-  receiver: string;
-  sender: string;
+/** 用户加入直播间 */
+export type WsBilldDeskJoinedType = IResWsFormat<{
+  live_room_id?: string;
+}>;
+
+export type WsBilldDeskStartRemoteResult = IResWsFormat<{
+  code: number;
+  msg: string;
+  data?: WsBilldDeskStartRemote['data'];
 }>;

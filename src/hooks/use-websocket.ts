@@ -10,6 +10,7 @@ import { useTip } from '@/hooks/use-tip';
 import { useWebRtcLive } from '@/hooks/webrtc/live';
 import { useWebRtcMeetingOne } from '@/hooks/webrtc/meetingOne';
 import { useWebRtcMeetingPk } from '@/hooks/webrtc/meetingPk';
+import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { useWebRtcSrs } from '@/hooks/webrtc/srs';
 import { useWebRtcTencentcloudCss } from '@/hooks/webrtc/tencentcloudCss';
 import {
@@ -28,6 +29,8 @@ import {
   WSGetRoomAllUserType,
   WSLivePkKeyType,
   WsAnswerType,
+  WsBilldDeskBehaviorType,
+  WsBilldDeskJoinType,
   WsCandidateType,
   WsConnectStatusEnum,
   WsDisableSpeakingType,
@@ -39,19 +42,15 @@ import {
   WsMsgTypeEnum,
   WsOfferType,
   WsOtherJoinType,
-  WsRemoteDeskBehaviorType,
   WsRoomLivingType,
   WsStartLiveType,
   WsUpdateJoinInfoType,
 } from '@/types/websocket';
 import { createNullVideo, handleUserMedia } from '@/utils';
-import { getPassword, getUuid } from '@/utils/localStorage/user';
 import {
   WebSocketClass,
   prettierReceiveWsMsg,
 } from '@/utils/network/webSocket';
-
-import { useWebRtcRemoteDesk } from './webrtc/remoteDesk';
 
 export const useWebsocket = () => {
   const route = useRoute();
@@ -79,8 +78,8 @@ export const useWebsocket = () => {
   const isAnchor = ref(false);
   const isRemoteDesk = ref(false);
   const remoteDeskUserUuid = ref('');
-  const deskUserUuid = ref(getUuid() || '');
-  const deskUserPassword = ref(getPassword() || '');
+  const deskUserUuid = ref('');
+  const deskUserPassword = ref('');
   const anchorInfo = ref<IUser>();
   const anchorSocketId = ref('');
   const canvasVideoStream = ref<MediaStream>();
@@ -102,10 +101,7 @@ export const useWebsocket = () => {
     () => connectStatus.value,
     (newval) => {
       if (newval === WsConnectStatusEnum.connect) {
-        const ws = networkStore.wsMap.get(roomId.value);
-        if (ws?.socketIo?.id) {
-          handleHeartbeat(ws?.socketIo?.id);
-        }
+        handleHeartbeat();
       }
     }
   );
@@ -132,7 +128,8 @@ export const useWebsocket = () => {
     return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
   });
 
-  function handleHeartbeat(socketId: string) {
+  function handleHeartbeat() {
+    if (isRemoteDesk.value) return;
     clearInterval(loopHeartbeatTimer.value);
     loopHeartbeatTimer.value = setInterval(() => {
       const ws = networkStore.wsMap.get(roomId.value);
@@ -141,12 +138,10 @@ export const useWebsocket = () => {
         requestId: getRandomString(8),
         msgType: WsMsgTypeEnum.heartbeat,
         data: {
-          socket_id: socketId,
           live_room_id: Number(roomId.value),
-          roomLiving: isAnchor.value && roomLiving.value,
         },
       });
-    }, 1000 * 3);
+    }, 1000 * 5);
   }
 
   function handleSendGetLiveUser(liveRoomId: number) {
@@ -254,17 +249,13 @@ export const useWebsocket = () => {
   function sendJoin() {
     const instance = networkStore.wsMap.get(roomId.value);
     if (!instance) return;
-    instance.send<WsJoinType['data']>({
+    instance.send<WsBilldDeskJoinType['data']>({
       requestId: getRandomString(8),
-      msgType: WsMsgTypeEnum.join,
+      msgType: WsMsgTypeEnum.billdDeskJoin,
       data: {
-        isRemoteDesk: isRemoteDesk.value,
-        socket_id: mySocketId.value,
-        live_room_id: Number(roomId.value),
-        user_info: userStore.userInfo,
         deskUserUuid: deskUserUuid.value,
         deskUserPassword: deskUserPassword.value,
-        remoteDeskUserUuid: remoteDeskUserUuid.value,
+        live_room_id: roomId.value,
       },
     });
   }
@@ -275,7 +266,7 @@ export const useWebsocket = () => {
     // websocket连接成功
     ws.socketIo.on(WsConnectStatusEnum.connect, () => {
       prettierReceiveWsMsg(WsConnectStatusEnum.connect, ws.socketIo);
-      handleHeartbeat(ws.socketIo!.id!);
+      handleHeartbeat();
       if (!ws) return;
       connectStatus.value = WsConnectStatusEnum.connect;
       ws.status = WsConnectStatusEnum.connect;
@@ -327,22 +318,6 @@ export const useWebsocket = () => {
         ]),
       }).catch(() => {});
     });
-
-    // 收到startRemoteDesk
-    // ws.socketIo.on(WsMsgTypeEnum.startRemoteDesk, (data: WsStartRemoteDesk) => {
-    //   console.log('收到startRemoteDesk', JSON.stringify(data));
-    //   if (data.data.receiver === mySocketId.value) {
-    //     appStore.remoteDesk.set(data.data.sender, {
-    //       sender: data.data.sender,
-    //       isClose: false,
-    //       maxBitrate: data.data.maxBitrate,
-    //       maxFramerate: data.data.maxFramerate,
-    //       resolutionRatio: data.data.resolutionRatio,
-    //       videoContentHint: data.data.videoContentHint,
-    //       audioContentHint: data.data.audioContentHint,
-    //     });
-    //   }
-    // });
 
     // 收到srsOffer
     ws.socketIo.on(WsMsgTypeEnum.srsOffer, (data: WsOfferType['data']) => {
@@ -550,11 +525,11 @@ export const useWebsocket = () => {
       }
     );
 
-    // 收到remoteDeskBehavior
+    // 收到billdDeskBehavior
     ws.socketIo.on(
-      WsMsgTypeEnum.remoteDeskBehavior,
-      (data: WsRemoteDeskBehaviorType['data']) => {
-        console.log('收到remoteDeskBehavior', data);
+      WsMsgTypeEnum.billdDeskBehavior,
+      (data: WsBilldDeskBehaviorType['data']) => {
+        console.log('收到billdDeskBehavior', data);
       }
     );
 
@@ -661,12 +636,15 @@ export const useWebsocket = () => {
     );
 
     // 用户加入房间完成
-    ws.socketIo.on(WsMsgTypeEnum.joined, (data: WsJoinType['data']) => {
-      prettierReceiveWsMsg(WsMsgTypeEnum.joined, data);
-      appStore.setLiveRoomInfo(data.live_room);
-      anchorInfo.value = data.anchor_info;
-      joinedReceiver.value = data.receiver!;
-    });
+    ws.socketIo.on(
+      WsMsgTypeEnum.billdDeskJoined,
+      (data: WsJoinType['data']) => {
+        prettierReceiveWsMsg(WsMsgTypeEnum.billdDeskJoined, data);
+        appStore.setLiveRoomInfo(data.live_room);
+        anchorInfo.value = data.anchor_info;
+        joinedReceiver.value = data.receiver!;
+      }
+    );
 
     // 其他用户加入房间
     ws.socketIo.on(WsMsgTypeEnum.otherJoin, (data: WsOtherJoinType['data']) => {

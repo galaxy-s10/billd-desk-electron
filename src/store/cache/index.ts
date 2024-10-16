@@ -6,6 +6,9 @@ import { AppRootState } from '@/store/app';
 export type PiniaCacheRootState = {
   muted: boolean;
   volume: number;
+  deskUserUuid: string;
+  deskUserPassword: string;
+  remoteDeskUserUuid: string;
   'resource-list': AppRootState['allTrack'];
 };
 
@@ -17,6 +20,9 @@ export const usePiniaCacheStore = defineStore(`${lsKeyPrefix}pinia-cache`, {
     return {
       muted: true,
       volume: 70,
+      deskUserUuid: '',
+      deskUserPassword: '',
+      remoteDeskUserUuid: '',
       'resource-list': [],
     };
   },
