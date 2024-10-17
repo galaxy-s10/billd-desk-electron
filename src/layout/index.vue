@@ -26,6 +26,7 @@
 </template>
 
 <script lang="ts" setup>
+import { getRandomString } from 'billd-utils';
 import { ref } from 'vue';
 
 import { useNetworkStore } from '@/store/network';
@@ -38,12 +39,16 @@ const downClientPosition = ref({ clientX: 0, clientY: 0 });
 function handleClose() {
   networkStore.removeAllWsAndRtc();
   setTimeout(() => {
-    window.electronAPI.ipcRenderer.send('windowClose');
+    window.electronAPI.ipcRenderer.send('windowClose', {
+      requestId: getRandomString(8),
+    });
   }, 300);
 }
 
 function handleMin() {
-  window.electronAPI.ipcRenderer.send('windowMinimize');
+  window.electronAPI.ipcRenderer.send('windowMinimize', {
+    requestId: getRandomString(8),
+  });
 }
 
 function handleMouseDown(event: MouseEvent) {
@@ -54,11 +59,11 @@ function handleMouseDown(event: MouseEvent) {
 
 function handleMouseMove(event: MouseEvent) {
   if (!isDown.value) return;
-  window.electronAPI.ipcRenderer.send(
-    'setWindowPosition',
-    event.screenX - downClientPosition.value.clientX,
-    event.screenY - downClientPosition.value.clientY
-  );
+  window.electronAPI.ipcRenderer.send('setWindowPosition', {
+    requestId: getRandomString(8),
+    x: event.screenX - downClientPosition.value.clientX,
+    y: event.screenY - downClientPosition.value.clientY,
+  });
 }
 function handleMouseUp() {
   isDown.value = false;
@@ -82,7 +87,12 @@ function handleMouseUp() {
     // -webkit-user-select: none;
     // -webkit-app-region: drag;
 
-    -webkit-app-region: no-drag;
+    // -webkit-app-region: no-drag;
+
+    -webkit-app-region: drag; /* Safari */
+    -moz-app-region: drag; /* Firefox */
+    -ms-app-region: drag; /* IE10+/Edge */
+    app-region: drag; /* Standard syntax */
 
     .ico {
       display: flex;

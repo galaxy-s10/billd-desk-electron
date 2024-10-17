@@ -20,6 +20,7 @@
         <div>axios：{{ AXIOS_BASEURL }}</div>
         <n-button @click="windowReload">刷新页面</n-button>
         <n-button @click="handleDebug">打开调试</n-button>
+        <n-button @click="handleTest">测试</n-button>
         <div>
           <span class="item">
             分辨率：<span v-if="videoSettings?.width">
@@ -205,9 +206,9 @@ import {
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { fetchFindReceiverByUuid } from '@/api/deskUser';
 import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
 import { useRTCParams } from '@/hooks/use-rtcParams';
+import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
@@ -215,6 +216,7 @@ import {
   BilldDeskBehaviorEnum,
   WsBilldDeskBehaviorType,
   WsBilldDeskStartRemote,
+  WsBilldDeskStartRemoteResult,
   WsChangeAudioContentHintType,
   WsChangeMaxBitrateType,
   WsChangeMaxFramerateType,
@@ -301,12 +303,15 @@ const videoSettings = ref<MediaTrackSettings>();
 watch(
   () => connectStatus.value,
   (newval) => {
+    console.log('connectStatus', newval);
     if (newval === WsConnectStatusEnum.connect) {
       clearInterval(loopReconnectTimer.value);
+      handleWsMsg();
     } else if (newval === WsConnectStatusEnum.disconnect) {
       window.$message.warning('disconnect');
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(
@@ -385,34 +390,6 @@ watch(
   }
 );
 
-watch(
-  () => connectStatus.value,
-  (newval) => {
-    if (newval === WsConnectStatusEnum.connect) {
-      handleWsMsg();
-    }
-  }
-);
-
-// function handleWsMsg() {
-//   const ws = networkStore.wsMap.get(roomId.value);
-//   if (!ws?.socketIo) return;
-//   // 收到billdDeskStartRemoteResult
-//   ws.socketIo.on(
-//     WsMsgTypeEnum.billdDeskStartRemoteResult,
-//     (data: WsBilldDeskStartRemoteResult['data']) => {
-//       console.log('收到billdDeskStartRemoteResult', data);
-//       if (data.code !== 0) {
-//         useTip({
-//           content: data.msg,
-//           hiddenCancel: true,
-//           hiddenClose: true,
-//         });
-//       }
-//     }
-//   );
-// }
-
 onUnmounted(() => {
   clearInterval(loopBilldDeskUpdateUserTimer.value);
   videoWrapRef.value?.removeEventListener('wheel', handleMouseWheel);
@@ -444,10 +421,36 @@ function handleLoopBilldDeskUpdateUserTimer() {
   }, 1000 * 2);
 }
 
-async function handleWsMsg() {
-  const res = await fetchFindReceiverByUuid(remoteDeskUserUuid.value);
-  console.log('remoteDeskUserUuid', res);
-  networkStore.wsMap.get(roomId.value)?.send<WsBilldDeskStartRemote['data']>({
+function handleWsMsg() {
+  const ws = networkStore.wsMap.get(roomId.value);
+  // 收到billdDeskStartRemoteResult
+  ws?.socketIo?.on(
+    WsMsgTypeEnum.billdDeskStartRemoteResult,
+    (data: WsBilldDeskStartRemoteResult['data']) => {
+      console.log('收到billdDeskStartRemoteResult', data);
+      if (data.code !== 0) {
+        useTip({
+          content: data.msg,
+          hiddenCancel: true,
+          hiddenClose: true,
+        });
+      } else {
+        if (data.data) {
+          receiverId.value = data.data.receiver;
+          appStore.remoteDesk.set(data.data.receiver, {
+            audioContentHint: data.data.audioContentHint,
+            videoContentHint: data.data.videoContentHint,
+            sender: data.data.sender,
+            isClose: false,
+            maxBitrate: data.data.maxBitrate,
+            maxFramerate: data.data.maxFramerate,
+            resolutionRatio: data.data.resolutionRatio,
+          });
+        }
+      }
+    }
+  );
+  ws?.send<WsBilldDeskStartRemote['data']>({
     requestId: getRandomString(8),
     msgType: WsMsgTypeEnum.billdDeskStartRemote,
     data: {
@@ -526,10 +529,10 @@ onMounted(() => {
     windowId.value = `${route.query.windowId as string}`;
   }
 
-  window.electronAPI.ipcRenderer.send(
-    'getChildWindowTitlebarHeight',
-    windowId.value
-  );
+  window.electronAPI.ipcRenderer.send('getChildWindowTitlebarHeight', {
+    requestId: getRandomString(8),
+    windowId: windowId.value,
+  });
   handleIpcRenderer();
 });
 
@@ -555,6 +558,7 @@ function handleIpcRenderer() {
   window.electronAPI.ipcRenderer.on('createWindowRes', (_event, source) => {
     console.log('createWindowRes', source);
     window.electronAPI.ipcRenderer.send('childWindowInit', {
+      requestId: getRandomString(8),
       type: 'childWindowInit',
       data: { id: source.id },
     });
@@ -780,23 +784,23 @@ watch(
           const x = (setting.width || 0) * (data.x / 1000);
           const y = (setting.height || 0) * (data.y / 1000);
           if (data.type === BilldDeskBehaviorEnum.setPosition) {
-            mouseSetPosition(x, y);
+            mouseSetPosition({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {
-            mouseMove(x, y);
+            mouseMove({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.mouseDrag) {
-            mouseDrag(x, y);
+            mouseDrag({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.leftClick) {
-            mouseLeftClick(x, y);
+            mouseLeftClick({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.rightClick) {
-            mouseRightClick(x, y);
+            mouseRightClick({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.doubleClick) {
-            mouseDoubleClick(x, y);
+            mouseDoubleClick({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.pressButtonLeft) {
-            mousePressButtonLeft(x, y);
+            mousePressButtonLeft({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.releaseButtonLeft) {
-            mouseReleaseButtonLeft(x, y);
+            mouseReleaseButtonLeft({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.keyboardType) {
-            keyboardType(data.keyboardtype);
+            keyboardType({ key: data.keyboardtype });
           }
         }
       };
@@ -807,11 +811,7 @@ watch(
 watch(
   () => appStore.remoteDesk.size,
   (newval) => {
-    if (newval) {
-      // if (!anchorStream.value) {
-      //   handleScreen();
-      // }
-    } else {
+    if (!newval) {
       handleClose();
     }
   }
@@ -846,12 +846,12 @@ watch(
             videoEl: item.videoEl,
           });
           if (res.width && res.height) {
-            window.electronAPI.ipcRenderer.send(
-              'setChildWindowBounds',
-              windowId.value,
-              Math.ceil(res.width),
-              Math.ceil(res.height + titlebarHeight.value)
-            );
+            window.electronAPI.ipcRenderer.send('setChildWindowBounds', {
+              requestId: getRandomString(8),
+              windowId: windowId.value,
+              width: Math.ceil(res.width),
+              height: Math.ceil(res.height + titlebarHeight.value),
+            });
           }
           showLoading.value = false;
         });
@@ -1046,11 +1046,19 @@ function handleMouseMove(event: MouseEvent) {
   const yInsideElement = clickY - rect.top;
   const x = (xInsideElement / rect.width) * 1000;
   const y = (yInsideElement / rect.height) * 1000;
-  console.log('handleMouseMove', x, y, xInsideElement, yInsideElement);
+  const requestId = getRandomString(8);
+  console.log(
+    'handleMouseMove',
+    requestId,
+    x,
+    y,
+    xInsideElement,
+    yInsideElement
+  );
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
-      requestId: getRandomString(8),
+      requestId,
       msgType: WsMsgTypeEnum.billdDeskBehavior,
       data: {
         roomId: roomId.value,
@@ -1108,42 +1116,110 @@ function handleMouseUp(event: MouseEvent) {
   isLongClick = false;
 }
 
-// function handleScreen() {
-//   window.electronAPI.ipcRenderer.send('getScreenStream');
-// }
-
-function mouseSetPosition(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseSetPosition', x, y);
+function mouseSetPosition({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseSetPosition', data);
+  window.electronAPI.ipcRenderer.send('mouseSetPosition', data);
 }
-function mouseMove(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseMove', x, y);
+function mouseMove({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseMove', data);
+  window.electronAPI.ipcRenderer.send('mouseMove', data);
 }
-function mouseDrag(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseDrag', x, y);
+function mouseDrag({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseDrag', data);
+  window.electronAPI.ipcRenderer.send('mouseDrag', data);
 }
-function mouseDoubleClick(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseDoubleClick', x, y);
+function mouseDoubleClick({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseDoubleClick', data);
+  window.electronAPI.ipcRenderer.send('mouseDoubleClick', data);
 }
-function mousePressButtonLeft(x, y) {
-  window.electronAPI.ipcRenderer.send('mousePressButtonLeft', x, y);
+function mousePressButtonLeft({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mousePressButtonLeft', data);
+  window.electronAPI.ipcRenderer.send('mousePressButtonLeft', data);
 }
-function keyboardType(key) {
-  window.electronAPI.ipcRenderer.send('keyboardType', key);
+function keyboardType({ key }) {
+  const data = {
+    requestId: getRandomString(8),
+    key,
+  };
+  console.log('keyboardType', data);
+  window.electronAPI.ipcRenderer.send('keyboardType', data);
 }
-function mouseReleaseButtonLeft(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', x, y);
+function mouseReleaseButtonLeft({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseReleaseButtonLeft', data);
+  window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', data);
 }
-function mouseLeftClick(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseLeftClick', x, y);
+function mouseLeftClick({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseSetPosition', data);
+  window.electronAPI.ipcRenderer.send('mouseLeftClick', data);
 }
-function mouseRightClick(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseRightClick', x, y);
+function mouseRightClick({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseRightClick', data);
+  window.electronAPI.ipcRenderer.send('mouseRightClick', data);
 }
 function handleDebug() {
-  window.electronAPI.ipcRenderer.send(
-    'handleOpenDevTools',
-    Number(windowId.value)
-  );
+  const data = {
+    requestId: getRandomString(8),
+    windowId: windowId.value,
+  };
+  console.log('handleDebug', data);
+  window.electronAPI.ipcRenderer.send('handleOpenDevTools', data);
+}
+function handleTest() {
+  console.log('handleTest');
+  window.electronAPI.ipcRenderer.send('mouseLeftClick', {
+    x: 1264,
+    y: 492,
+    requestId: 'weehy',
+  });
+  let num = 1264;
+  setInterval(() => {
+    num -= 1;
+    window.electronAPI.ipcRenderer.send('mouseMove', {
+      x: num,
+      y: 492,
+      requestId: '----',
+    });
+  }, 2000);
 }
 </script>
 

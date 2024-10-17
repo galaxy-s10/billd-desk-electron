@@ -304,6 +304,7 @@ onMounted(() => {
   console.log('route.query', route.query);
   handleInit();
   window.electronAPI.ipcRenderer.send('getMainWindowId', {
+    requestId: getRandomString(8),
     type: 'getMainWindowId',
   });
 
@@ -335,8 +336,12 @@ onMounted(() => {
     }
   );
 
-  window.electronAPI.ipcRenderer.send('workAreaSize');
-  window.electronAPI.ipcRenderer.send('getPrimaryDisplaySize');
+  window.electronAPI.ipcRenderer.send('workAreaSize', {
+    requestId: getRandomString(8),
+  });
+  window.electronAPI.ipcRenderer.send('getPrimaryDisplaySize', {
+    requestId: getRandomString(8),
+  });
 
   window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
     console.log('getMainWindowIdRes', source);
@@ -350,6 +355,7 @@ onMounted(() => {
   window.electronAPI.ipcRenderer.on('createWindowRes', (_event, source) => {
     console.log('createWindowRes', source);
     window.electronAPI.ipcRenderer.send('childWindowInit', {
+      requestId: getRandomString(8),
       type: 'childWindowInit',
       data: { id: source.id },
     });
@@ -463,9 +469,8 @@ watch(
 
 function handleWsMsg() {
   const ws = networkStore.wsMap.get(roomId.value);
-  if (!ws?.socketIo) return;
   // 收到billdDeskStartRemoteResult
-  ws.socketIo.on(
+  ws?.socketIo?.on(
     WsMsgTypeEnum.billdDeskStartRemoteResult,
     (data: WsBilldDeskStartRemoteResult['data']) => {
       console.log('收到billdDeskStartRemoteResult', data);
@@ -476,18 +481,20 @@ function handleWsMsg() {
           hiddenClose: true,
         });
       } else {
-        if (!data.data) return;
-        if (data.data.receiver === mySocketId.value) {
-          appStore.remoteDesk.set(data.data.sender, {
-            sender: data.data.sender,
-            isClose: false,
-            maxBitrate: data.data.maxBitrate,
-            maxFramerate: data.data.maxFramerate,
-            resolutionRatio: data.data.resolutionRatio,
-            videoContentHint: data.data.videoContentHint,
-            audioContentHint: data.data.audioContentHint,
-          });
-          handleRTC(data.data.sender);
+        if (data.data) {
+          receiverId.value = data.data.receiver;
+          if (data.data.receiver === mySocketId.value) {
+            appStore.remoteDesk.set(data.data.sender, {
+              sender: data.data.sender,
+              isClose: false,
+              maxBitrate: data.data.maxBitrate,
+              maxFramerate: data.data.maxFramerate,
+              resolutionRatio: data.data.resolutionRatio,
+              videoContentHint: data.data.videoContentHint,
+              audioContentHint: data.data.audioContentHint,
+            });
+            handleRTC(data.data.sender);
+          }
         }
       }
     }
@@ -570,6 +577,7 @@ function startRemote() {
 
   isControlOther.value = true;
   window.electronAPI.ipcRenderer.send('createWindow', {
+    requestId: getRandomString(8),
     type: 'createWindow',
     data: {
       route: routerName.webrtc,
@@ -674,31 +682,31 @@ watch(
               '----'
             );
             if (data.type === BilldDeskBehaviorEnum.setPosition) {
-              mouseSetPosition(x, y);
+              mouseSetPosition({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {
-              mouseMove(x, y);
+              // mouseMove({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.mouseDrag) {
-              mouseDrag(x, y);
+              mouseDrag({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.leftClick) {
-              mouseLeftClick(x, y);
+              mouseLeftClick({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.rightClick) {
-              mouseRightClick(x, y);
+              mouseRightClick({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.doubleClick) {
-              mouseDoubleClick(x, y);
+              mouseDoubleClick({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.pressButtonLeft) {
-              mousePressButtonLeft(x, y);
+              mousePressButtonLeft({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.releaseButtonLeft) {
-              mouseReleaseButtonLeft(x, y);
+              mouseReleaseButtonLeft({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.keyboardType) {
-              keyboardType(data.keyboardtype);
+              keyboardType({ key: data.keyboardtype });
             } else if (data.type === BilldDeskBehaviorEnum.scrollDown) {
-              mouseScrollDown(data.amount);
+              mouseScrollDown({ amount: data.amount });
             } else if (data.type === BilldDeskBehaviorEnum.scrollUp) {
-              mouseScrollUp(data.amount);
+              mouseScrollUp({ amount: data.amount });
             } else if (data.type === BilldDeskBehaviorEnum.scrollLeft) {
-              mouseScrollLeft(data.amount);
+              mouseScrollLeft({ amount: data.amount });
             } else if (data.type === BilldDeskBehaviorEnum.scrollRight) {
-              mouseScrollRight(data.amount);
+              mouseScrollRight({ amount: data.amount });
             }
           }
         }
@@ -767,62 +775,141 @@ watch(
 
 /** 将程序主窗口移动到屏幕右下角 */
 function handleMoveScreenRightBottom() {
-  window.electronAPI.ipcRenderer.send('handleMoveScreenRightBottom');
+  window.electronAPI.ipcRenderer.send('handleMoveScreenRightBottom', {
+    requestId: getRandomString(8),
+  });
 }
 /** 将程序主窗口指定 */
 function handleMainWindowSetAlwaysOnTop(flag: boolean) {
   window.electronAPI.ipcRenderer.send('mainWindowSetAlwaysOnTop', {
+    requestId: getRandomString(8),
     type: 'mainWindowSetAlwaysOnTop',
     data: { flag },
   });
 }
 
 function handleScreen() {
-  window.electronAPI.ipcRenderer.send('getScreenStream');
+  window.electronAPI.ipcRenderer.send('getScreenStream', {
+    requestId: getRandomString(8),
+  });
 }
 
-function mouseSetPosition(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseSetPosition', x, y);
+function mouseSetPosition({ x, y }) {
+  window.electronAPI.ipcRenderer.send('mouseSetPosition', {
+    requestId: getRandomString(8),
+    x,
+    y,
+  });
 }
-function mouseMove(x, y) {
-  console.log('mouseMovemouseMove', x, y);
-  window.electronAPI.ipcRenderer.send('mouseMove', x, y);
+function mouseMove({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseMove', data);
+  window.electronAPI.ipcRenderer.send('mouseMove', data);
 }
-function mouseDrag(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseDrag', x, y);
+function mouseDrag({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseDrag', data);
+  window.electronAPI.ipcRenderer.send('mouseDrag', data);
 }
-function mouseDoubleClick(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseDoubleClick', x, y);
+function mouseDoubleClick({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseDoubleClick', data);
+  window.electronAPI.ipcRenderer.send('mouseDoubleClick', data);
 }
-function mousePressButtonLeft(x, y) {
-  window.electronAPI.ipcRenderer.send('mousePressButtonLeft', x, y);
+function mousePressButtonLeft({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mousePressButtonLeft', data);
+  window.electronAPI.ipcRenderer.send('mousePressButtonLeft', data);
 }
-function keyboardType(key) {
-  window.electronAPI.ipcRenderer.send('keyboardType', key);
+function keyboardType({ key }) {
+  const data = {
+    requestId: getRandomString(8),
+    key,
+  };
+  console.log('keyboardType', data);
+  window.electronAPI.ipcRenderer.send('keyboardType', data);
 }
-function mouseReleaseButtonLeft(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', x, y);
+function mouseReleaseButtonLeft({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseReleaseButtonLeft', data);
+  window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', data);
 }
-function mouseLeftClick(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseLeftClick', x, y);
+function mouseLeftClick({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseLeftClick', data);
+  window.electronAPI.ipcRenderer.send('mouseLeftClick', data);
 }
-function mouseRightClick(x, y) {
-  window.electronAPI.ipcRenderer.send('mouseRightClick', x, y);
+function mouseRightClick({ x, y }) {
+  const data = {
+    requestId: getRandomString(8),
+    x,
+    y,
+  };
+  console.log('mouseRightClick', data);
+  window.electronAPI.ipcRenderer.send('mouseRightClick', data);
 }
 function handleDebug() {
-  window.electronAPI.ipcRenderer.send('handleOpenDevTools');
+  const data = {
+    requestId: getRandomString(8),
+  };
+  console.log('handleDebug', data);
+  window.electronAPI.ipcRenderer.send('handleOpenDevTools', data);
 }
-function mouseScrollDown(amount) {
-  window.electronAPI.ipcRenderer.send('mouseScrollDown', amount);
+function mouseScrollDown({ amount }) {
+  const data = {
+    requestId: getRandomString(8),
+    amount,
+  };
+  console.log('mouseScrollDown', data);
+  window.electronAPI.ipcRenderer.send('mouseScrollDown', data);
 }
-function mouseScrollUp(amount) {
-  window.electronAPI.ipcRenderer.send('mouseScrollUp', amount);
+function mouseScrollUp({ amount }) {
+  const data = {
+    requestId: getRandomString(8),
+    amount,
+  };
+  console.log('mouseScrollUp', data);
+  window.electronAPI.ipcRenderer.send('mouseScrollUp', data);
 }
-function mouseScrollLeft(amount) {
-  window.electronAPI.ipcRenderer.send('mouseScrollLeft', amount);
+function mouseScrollLeft({ amount }) {
+  const data = {
+    requestId: getRandomString(8),
+    amount,
+  };
+  console.log('mouseScrollLeft', data);
+  window.electronAPI.ipcRenderer.send('mouseScrollLeft', data);
 }
-function mouseScrollRight(amount) {
-  window.electronAPI.ipcRenderer.send('mouseScrollRight', amount);
+function mouseScrollRight({ amount }) {
+  const data = {
+    requestId: getRandomString(8),
+    amount,
+  };
+  console.log('mouseScrollRight', data);
+  window.electronAPI.ipcRenderer.send('mouseScrollRight', data);
 }
 </script>
 

@@ -35,7 +35,6 @@ import {
   WsConnectStatusEnum,
   WsDisableSpeakingType,
   WsGetLiveUserType,
-  WsHeartbeatType,
   WsJoinType,
   WsLeavedType,
   WsMessageType,
@@ -128,21 +127,7 @@ export const useWebsocket = () => {
     return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '-1';
   });
 
-  function handleHeartbeat() {
-    if (isRemoteDesk.value) return;
-    clearInterval(loopHeartbeatTimer.value);
-    loopHeartbeatTimer.value = setInterval(() => {
-      const ws = networkStore.wsMap.get(roomId.value);
-      if (!ws) return;
-      ws.send<WsHeartbeatType['data']>({
-        requestId: getRandomString(8),
-        msgType: WsMsgTypeEnum.heartbeat,
-        data: {
-          live_room_id: Number(roomId.value),
-        },
-      });
-    }, 1000 * 5);
-  }
+  function handleHeartbeat() {}
 
   function handleSendGetLiveUser(liveRoomId: number) {
     loopGetLiveUserTimer.value = setInterval(() => {
@@ -262,6 +247,7 @@ export const useWebsocket = () => {
 
   function initReceive() {
     const ws = networkStore.wsMap.get(roomId.value);
+    console.log(ws, roomId.value, ';llll');
     if (!ws?.socketIo) return;
     // websocket连接成功
     ws.socketIo.on(WsConnectStatusEnum.connect, () => {
