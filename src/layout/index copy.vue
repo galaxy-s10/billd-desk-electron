@@ -2,15 +2,12 @@
   <div class="layout">
     <div
       class="top-border"
-      @mousedown="startMove"
+      @mousedown="handleMouseDown"
+      @mousemove="handleMouseMove"
+      @mouseup="handleMouseUp"
+      @mouseleave="handleMouseUp"
     >
-      <!-- <div
-      class="top-border"
-      @mousedown="startMove"
-      @mouseup="endMove"
-      @mousemove="moving"
-      @mouseleave="endMove"
-    > -->
+      22
       <div
         class="ico close"
         @click="handleClose"
@@ -31,11 +28,14 @@
 
 <script lang="ts" setup>
 import { getRandomString } from 'billd-utils';
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 
 import { useNetworkStore } from '@/store/network';
 
 const networkStore = useNetworkStore();
+const isDown = ref(false);
+
+const downClientPosition = ref({ clientX: 0, clientY: 0 });
 
 function handleClose() {
   networkStore.removeAllWsAndRtc();
@@ -51,34 +51,24 @@ function handleMin() {
     requestId: getRandomString(8),
   });
 }
-interface IPoint {
-  x: number;
-  y: number;
+
+function handleMouseDown(event: MouseEvent) {
+  isDown.value = true;
+  downClientPosition.value.clientX = event.clientX;
+  downClientPosition.value.clientY = event.clientY;
 }
-// 窗口当前的位置 + 鼠标当前的相对位置 - 鼠标以前的相对位置
-const isMoving = ref<boolean>(false);
-const lastPoint = reactive<IPoint>({ x: 0, y: 0 });
 
-const startMove = (_ev: MouseEvent) => {
-  console.log('kkkkk');
-  isMoving.value = true;
-  lastPoint.x = _ev.clientX;
-  lastPoint.y = _ev.clientY;
-};
-
-// const endMove = (_ev: MouseEvent) => {
-//   isMoving.value = false;
-// };
-// const moving = (_ev: MouseEvent) => {
-//   if (isMoving.value) {
-//     // window.api.win.move(_ev.screenX - lastPoint.x, _ev.screenY - lastPoint.y);
-//     window.electronAPI.ipcRenderer.send('setWindowPosition', {
-//       requestId: getRandomString(8),
-//       x: _ev.screenX - lastPoint.x,
-//       y: _ev.screenY - lastPoint.y,
-//     });
-//   }
-// };
+function handleMouseMove(event: MouseEvent) {
+  if (!isDown.value) return;
+  window.electronAPI.ipcRenderer.send('setWindowPosition', {
+    requestId: getRandomString(8),
+    x: event.screenX - downClientPosition.value.clientX,
+    y: event.screenY - downClientPosition.value.clientY,
+  });
+}
+function handleMouseUp() {
+  isDown.value = false;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -99,7 +89,10 @@ const startMove = (_ev: MouseEvent) => {
     user-select: none;
     -webkit-user-select: none;
 
-    -webkit-app-region: drag;
+    // -webkit-user-select: none;
+    // -webkit-app-region: drag;
+
+    // -webkit-app-region: drag;
     // -webkit-app-region: no-drag;
 
     .ico {

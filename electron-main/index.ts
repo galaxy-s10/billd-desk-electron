@@ -2,8 +2,8 @@ import path from 'path';
 import { platform } from 'process';
 
 import {
-  BrowserWindow,
   app,
+  BrowserWindow,
   desktopCapturer,
   ipcMain,
   powerMonitor,
@@ -56,6 +56,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: windowNormalParams.width,
     height: windowNormalParams.height,
+    // 隐藏菜单栏
     autoHideMenuBar: true,
     webPreferences: {
       // devTools: true,
@@ -65,6 +66,26 @@ function createWindow() {
     frame: false,
   });
   winBounds = win.getBounds();
+  ipcMain.on('commonTest', async (_event, { requestId, x, y }) => {
+    console.log('收到commonTest', { requestId, x, y });
+    try {
+      await nutjs.mouse.move([{ x, y }]);
+      // await nutjs.mouse.drag(
+      //   nutjs.straightTo(nutjs.centerOf(new nutjs.Region(0, 0, 100, 100)))
+      // );
+      win?.webContents.send('commonTestRes', {
+        isErr: false,
+        msg: { x, y },
+        requestId,
+      });
+    } catch (error) {
+      win?.webContents.send('commonTestRes', {
+        isErr: true,
+        msg: JSON.stringify(error),
+        requestId,
+      });
+    }
+  });
   ipcMain.on('powerSaveBlockerStart', (_event, { requestId }) => {
     console.log('收到powerSaveBlockerStart', { requestId });
     try {
@@ -133,13 +154,16 @@ function createWindow() {
     try {
       if (windowId) {
         const childWindow = childWindowMap.get(Number(windowId));
-        childWindow?.webContents.openDevTools({ mode: 'detach' });
+        childWindow?.webContents.openDevTools({
+          mode: 'detach',
+          activate: true,
+        });
         childWindow?.webContents.send('handleOpenDevToolsRes', {
           requestId,
           msg: 'ok',
         });
       } else {
-        win?.webContents.openDevTools({ mode: 'detach' });
+        win?.webContents.openDevTools({ mode: 'detach', activate: true });
         win?.webContents.send('handleOpenDevToolsRes', {
           requestId,
           msg: 'ok',
@@ -264,8 +288,7 @@ function createWindow() {
   ipcMain.on('mouseMove', async (_event, { requestId, x, y }) => {
     console.log('收到mouseMove', { requestId, x, y });
     try {
-      // await nutjs.mouse.move([{ x, y }]);
-      nutjs.mouse.move([{ x, y }]);
+      await nutjs.mouse.move([{ x, y }]);
       win?.webContents.send('mouseMoveRes', {
         isErr: false,
         msg: { x, y },
@@ -312,13 +335,13 @@ function createWindow() {
       });
     }
   });
-  ipcMain.on('mousePressButtonLeft', async (_event, { requestId, x, y }) => {
-    console.log('收到mousePressButtonLeft', { requestId, x, y });
+  ipcMain.on('mousePressButtonLeft', async (_event, { requestId }) => {
+    console.log('收到mousePressButtonLeft', { requestId });
     try {
       await nutjs.mouse.pressButton(nutjs.Button.LEFT);
       win?.webContents.send('mousePressButtonLeftRes', {
         isErr: false,
-        msg: { x, y },
+        msg: {},
         requestId,
       });
     } catch (error) {
@@ -329,13 +352,13 @@ function createWindow() {
       });
     }
   });
-  ipcMain.on('mouseReleaseButtonLeft', async (_event, { requestId, x, y }) => {
-    console.log('收到mouseReleaseButtonLeft', { requestId, x, y });
+  ipcMain.on('mouseReleaseButtonLeft', async (_event, { requestId }) => {
+    console.log('收到mouseReleaseButtonLeft', { requestId });
     try {
       await nutjs.mouse.releaseButton(nutjs.Button.LEFT);
       win?.webContents.send('mouseReleaseButtonLeftRes', {
         isErr: false,
-        msg: { x, y },
+        msg: {},
         requestId,
       });
     } catch (error) {
@@ -346,13 +369,13 @@ function createWindow() {
       });
     }
   });
-  ipcMain.on('mouseDoubleClick', async (_event, { requestId, x, y }) => {
-    console.log('收到mouseDoubleClick', { requestId, x, y });
+  ipcMain.on('mouseDoubleClick', async (_event, { requestId }) => {
+    console.log('收到mouseDoubleClick', { requestId });
     try {
       await nutjs.mouse.doubleClick(nutjs.Button.LEFT);
       win?.webContents.send('mouseDoubleClickRes', {
         isErr: false,
-        msg: { x, y },
+        msg: {},
         requestId,
       });
     } catch (error) {
@@ -621,7 +644,7 @@ function createWindow() {
       if (process.env.VITE_DEV_SERVER_URL) {
         url = `${process.env.VITE_DEV_SERVER_URL as string}#/${params}`;
         childWindow.loadURL(url);
-        childWindow.webContents.openDevTools({ mode: 'detach' });
+        // childWindow.webContents.openDevTools({ mode: 'detach' });
       } else {
         url = `${path.join(
           process.env.DIST as string,
@@ -654,7 +677,7 @@ function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL as string);
-    win.webContents.openDevTools({ mode: 'detach' });
+    // win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(process.env.DIST as string, 'index.html'));
   }

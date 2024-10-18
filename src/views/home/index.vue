@@ -1,5 +1,6 @@
 <template>
   <div>
+    {{ position }}
     <div>
       <div>
         <div>{{ suspend }}</div>
@@ -159,6 +160,7 @@
     <div>
       <n-button @click="windowReload">刷新页面</n-button>
       <n-button @click="handleDebug">打开调试</n-button>
+      <n-button @click="handleTest">测试</n-button>
     </div>
     <div class="list">
       <div
@@ -260,6 +262,7 @@ const originalPassword = ref('');
 const loopBilldDeskUpdateUserTimer = ref();
 const suspend = ref('');
 const resume = ref('');
+const position = ref({ x: 0, y: 0 });
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -307,12 +310,24 @@ onMounted(() => {
     requestId: getRandomString(8),
     type: 'getMainWindowId',
   });
+  setInterval(() => {
+    window.electronAPI.ipcRenderer.send('getWindowPosition', {
+      requestId: getRandomString(8),
+    });
+  }, 1000);
 
   window.electronAPI.ipcRenderer.on(
     'powerMonitor-suspend',
     (_event, source) => {
       console.log('powerMonitor-suspend', source);
       suspend.value = `${new Date().toLocaleString()}-suspend`;
+    }
+  );
+  window.electronAPI.ipcRenderer.on(
+    'getWindowPositionRes',
+    (_event, source) => {
+      console.log('getWindowPositionRes', source);
+      position.value = source.position;
     }
   );
   window.electronAPI.ipcRenderer.on('powerMonitor-resume', (_event, source) => {
@@ -619,9 +634,8 @@ watch(
   (newval) => {
     newval.forEach((item) => {
       if (!item.cbDataChannel) return;
-      const setting = anchorStream.value?.getVideoTracks()[0].getSettings();
+      // const setting = anchorStream.value?.getVideoTracks()[0].getSettings();
       item.cbDataChannel.onmessage = (event) => {
-        console.log('dataChannel-onmessage', event);
         const jsondata: {
           msgType: WsMsgTypeEnum;
           requestId: string;
@@ -676,15 +690,10 @@ watch(
               (appStore.primaryDisplaySize.width || 0) * (data.x / 1000);
             const y =
               (appStore.primaryDisplaySize.height || 0) * (data.y / 1000);
-            console.log(
-              JSON.stringify(setting),
-              appStore.primaryDisplaySize,
-              '----'
-            );
             if (data.type === BilldDeskBehaviorEnum.setPosition) {
               mouseSetPosition({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {
-              // mouseMove({ x, y });
+              mouseMove({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.mouseDrag) {
               mouseDrag({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.leftClick) {
@@ -692,11 +701,11 @@ watch(
             } else if (data.type === BilldDeskBehaviorEnum.rightClick) {
               mouseRightClick({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.doubleClick) {
-              mouseDoubleClick({ x, y });
+              mouseDoubleClick();
             } else if (data.type === BilldDeskBehaviorEnum.pressButtonLeft) {
-              mousePressButtonLeft({ x, y });
+              mousePressButtonLeft();
             } else if (data.type === BilldDeskBehaviorEnum.releaseButtonLeft) {
-              mouseReleaseButtonLeft({ x, y });
+              mouseReleaseButtonLeft();
             } else if (data.type === BilldDeskBehaviorEnum.keyboardType) {
               keyboardType({ key: data.keyboardtype });
             } else if (data.type === BilldDeskBehaviorEnum.scrollDown) {
@@ -819,20 +828,16 @@ function mouseDrag({ x, y }) {
   console.log('mouseDrag', data);
   window.electronAPI.ipcRenderer.send('mouseDrag', data);
 }
-function mouseDoubleClick({ x, y }) {
+function mouseDoubleClick() {
   const data = {
     requestId: getRandomString(8),
-    x,
-    y,
   };
   console.log('mouseDoubleClick', data);
   window.electronAPI.ipcRenderer.send('mouseDoubleClick', data);
 }
-function mousePressButtonLeft({ x, y }) {
+function mousePressButtonLeft() {
   const data = {
     requestId: getRandomString(8),
-    x,
-    y,
   };
   console.log('mousePressButtonLeft', data);
   window.electronAPI.ipcRenderer.send('mousePressButtonLeft', data);
@@ -845,11 +850,9 @@ function keyboardType({ key }) {
   console.log('keyboardType', data);
   window.electronAPI.ipcRenderer.send('keyboardType', data);
 }
-function mouseReleaseButtonLeft({ x, y }) {
+function mouseReleaseButtonLeft() {
   const data = {
     requestId: getRandomString(8),
-    x,
-    y,
   };
   console.log('mouseReleaseButtonLeft', data);
   window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', data);
@@ -878,6 +881,98 @@ function handleDebug() {
   };
   console.log('handleDebug', data);
   window.electronAPI.ipcRenderer.send('handleOpenDevTools', data);
+}
+// function handleTest() {
+//   // mouseMove({ x: 690, y: 478 });
+//   networkStore.rtcMap
+//     .get(receiverId.value)
+//     ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+//       requestId: getRandomString(8),
+//       msgType: WsMsgTypeEnum.billdDeskBehavior,
+//       data: {
+//         roomId: roomId.value,
+//         sender: mySocketId.value,
+//         receiver: receiverId.value,
+//         keyboardtype: 0,
+//         type: BilldDeskBehaviorEnum.mouseMove,
+//         x: 690,
+//         y: 478,
+//         amount: 0,
+//       },
+//     });
+//   setTimeout(() => {
+//     // mousePressButtonLeft();
+//     networkStore.rtcMap
+//       .get(receiverId.value)
+//       ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+//         requestId: getRandomString(8),
+//         msgType: WsMsgTypeEnum.billdDeskBehavior,
+//         data: {
+//           roomId: roomId.value,
+//           sender: mySocketId.value,
+//           receiver: receiverId.value,
+//           keyboardtype: 0,
+//           type: BilldDeskBehaviorEnum.pressButtonLeft,
+//           x: 690,
+//           y: 478,
+//           amount: 0,
+//         },
+//       });
+//   }, 50);
+//   setTimeout(() => {
+//     const num = 3;
+//     for (let i = 0; i < num; i += 1) {
+//       // mouseMove({ x: 690 + i, y: 478 });
+//       // networkStore.rtcMap
+//       //   .get(receiverId.value)
+//       //   ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+//       //     requestId: getRandomString(8),
+//       //     msgType: WsMsgTypeEnum.billdDeskBehavior,
+//       //     data: {
+//       //       roomId: roomId.value,
+//       //       sender: mySocketId.value,
+//       //       receiver: receiverId.value,
+//       //       keyboardtype: 0,
+//       //       type: BilldDeskBehaviorEnum.mouseMove,
+//       //       x: 690 - i,
+//       //       y: 478,
+//       //       amount: 0,
+//       //     },
+//       //   });
+//     }
+//     setTimeout(() => {
+//       // mouseReleaseButtonLeft();
+//       networkStore.rtcMap
+//         .get(receiverId.value)
+//         ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+//           requestId: getRandomString(8),
+//           msgType: WsMsgTypeEnum.billdDeskBehavior,
+//           data: {
+//             roomId: roomId.value,
+//             sender: mySocketId.value,
+//             receiver: receiverId.value,
+//             keyboardtype: 0,
+//             type: BilldDeskBehaviorEnum.releaseButtonLeft,
+//             x: 690,
+//             y: 478,
+//             amount: 0,
+//           },
+//         });
+//     }, 2000);
+//   }, 300);
+// }
+function handleTest() {
+  mouseMove({ x: position.value.x + 200, y: position.value.y + 10 });
+  setTimeout(() => {
+    mousePressButtonLeft();
+  }, 50);
+  setTimeout(() => {
+    const num = 50;
+    for (let i = 0; i < num; i += 1) {
+      mouseMove({ x: position.value.x + 200 + i, y: position.value.y + 10 });
+    }
+    mouseReleaseButtonLeft();
+  }, 300);
 }
 function mouseScrollDown({ amount }) {
   const data = {

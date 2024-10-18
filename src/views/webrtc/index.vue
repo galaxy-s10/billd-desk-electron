@@ -794,11 +794,11 @@ watch(
           } else if (data.type === BilldDeskBehaviorEnum.rightClick) {
             mouseRightClick({ x, y });
           } else if (data.type === BilldDeskBehaviorEnum.doubleClick) {
-            mouseDoubleClick({ x, y });
+            mouseDoubleClick();
           } else if (data.type === BilldDeskBehaviorEnum.pressButtonLeft) {
-            mousePressButtonLeft({ x, y });
+            mousePressButtonLeft();
           } else if (data.type === BilldDeskBehaviorEnum.releaseButtonLeft) {
-            mouseReleaseButtonLeft({ x, y });
+            mouseReleaseButtonLeft();
           } else if (data.type === BilldDeskBehaviorEnum.keyboardType) {
             keyboardType({ key: data.keyboardtype });
           }
@@ -1023,9 +1023,7 @@ function handleMouseDown(event: MouseEvent) {
         sender: mySocketId.value,
         receiver: receiverId.value,
         keyboardtype: 0,
-        type: isLongClick
-          ? BilldDeskBehaviorEnum.pressButtonLeft
-          : BilldDeskBehaviorEnum.pressButtonLeft,
+        type: BilldDeskBehaviorEnum.pressButtonLeft,
         x,
         y,
         amount: 0,
@@ -1143,20 +1141,16 @@ function mouseDrag({ x, y }) {
   console.log('mouseDrag', data);
   window.electronAPI.ipcRenderer.send('mouseDrag', data);
 }
-function mouseDoubleClick({ x, y }) {
+function mouseDoubleClick() {
   const data = {
     requestId: getRandomString(8),
-    x,
-    y,
   };
   console.log('mouseDoubleClick', data);
   window.electronAPI.ipcRenderer.send('mouseDoubleClick', data);
 }
-function mousePressButtonLeft({ x, y }) {
+function mousePressButtonLeft() {
   const data = {
     requestId: getRandomString(8),
-    x,
-    y,
   };
   console.log('mousePressButtonLeft', data);
   window.electronAPI.ipcRenderer.send('mousePressButtonLeft', data);
@@ -1169,11 +1163,9 @@ function keyboardType({ key }) {
   console.log('keyboardType', data);
   window.electronAPI.ipcRenderer.send('keyboardType', data);
 }
-function mouseReleaseButtonLeft({ x, y }) {
+function mouseReleaseButtonLeft() {
   const data = {
     requestId: getRandomString(8),
-    x,
-    y,
   };
   console.log('mouseReleaseButtonLeft', data);
   window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', data);
@@ -1205,21 +1197,85 @@ function handleDebug() {
   window.electronAPI.ipcRenderer.send('handleOpenDevTools', data);
 }
 function handleTest() {
-  console.log('handleTest');
-  window.electronAPI.ipcRenderer.send('mouseLeftClick', {
-    x: 1264,
-    y: 492,
-    requestId: 'weehy',
-  });
-  let num = 1264;
-  setInterval(() => {
-    num -= 1;
-    window.electronAPI.ipcRenderer.send('mouseMove', {
-      x: num,
-      y: 492,
-      requestId: '----',
+  // mouseMove({ x: 690, y: 478 });
+  networkStore.rtcMap
+    .get(receiverId.value)
+    ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+      requestId: getRandomString(8),
+      msgType: WsMsgTypeEnum.billdDeskBehavior,
+      data: {
+        roomId: roomId.value,
+        sender: mySocketId.value,
+        receiver: receiverId.value,
+        keyboardtype: 0,
+        type: BilldDeskBehaviorEnum.mouseMove,
+        x: 690,
+        y: 478,
+        amount: 0,
+      },
     });
-  }, 2000);
+  setTimeout(() => {
+    // mousePressButtonLeft();
+    networkStore.rtcMap
+      .get(receiverId.value)
+      ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+        requestId: getRandomString(8),
+        msgType: WsMsgTypeEnum.billdDeskBehavior,
+        data: {
+          roomId: roomId.value,
+          sender: mySocketId.value,
+          receiver: receiverId.value,
+          keyboardtype: 0,
+          type: BilldDeskBehaviorEnum.pressButtonLeft,
+          x: 690,
+          y: 478,
+          amount: 0,
+        },
+      });
+  }, 50);
+  setTimeout(() => {
+    const num = 30;
+    for (let i = 0; i < num; i += 1) {
+      // mouseMove({ x: 690 + i, y: 478 });
+      setTimeout(() => {
+        networkStore.rtcMap
+          .get(receiverId.value)
+          ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+            requestId: getRandomString(8),
+            msgType: WsMsgTypeEnum.billdDeskBehavior,
+            data: {
+              roomId: roomId.value,
+              sender: mySocketId.value,
+              receiver: receiverId.value,
+              keyboardtype: 0,
+              type: BilldDeskBehaviorEnum.mouseMove,
+              x: 690 - i,
+              y: 478,
+              amount: 0,
+            },
+          });
+      }, 50 * i);
+    }
+    setTimeout(() => {
+      // mouseReleaseButtonLeft();
+      networkStore.rtcMap
+        .get(receiverId.value)
+        ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+          requestId: getRandomString(8),
+          msgType: WsMsgTypeEnum.billdDeskBehavior,
+          data: {
+            roomId: roomId.value,
+            sender: mySocketId.value,
+            receiver: receiverId.value,
+            keyboardtype: 0,
+            type: BilldDeskBehaviorEnum.releaseButtonLeft,
+            x: 690,
+            y: 478,
+            amount: 0,
+          },
+        });
+    }, 2000);
+  }, 300);
 }
 </script>
 
