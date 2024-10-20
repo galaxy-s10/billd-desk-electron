@@ -9,6 +9,7 @@ export type PiniaCacheRootState = {
   deskUserUuid: string;
   deskUserPassword: string;
   remoteDeskUserUuid: string;
+  remoteDeskUserPassword: string;
   'resource-list': AppRootState['allTrack'];
 };
 
@@ -23,6 +24,7 @@ export const usePiniaCacheStore = defineStore(`${lsKeyPrefix}pinia-cache`, {
       deskUserUuid: '',
       deskUserPassword: '',
       remoteDeskUserUuid: '',
+      remoteDeskUserPassword: '',
       'resource-list': [],
     };
   },

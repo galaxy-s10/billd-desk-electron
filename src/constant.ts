@@ -1,4 +1,4 @@
-import { MediaTypeEnum } from '@/interface';
+import { BilldHtmlWebpackPluginLog, MediaTypeEnum } from '@/interface';
 import { prodDomain } from '@/spec-config';
 
 import { LiveRoomTypeEnum } from './types/ILiveRoom';
@@ -14,19 +14,24 @@ export const WECHAT_REDIRECT_URI = ``;
 
 export const QRCODE_LOGIN_URI = ``;
 
-export const AUTHOR_GITHUB = `https://github.com/galaxy-s10`;
 export const PROJECT_GITHUB = `https://github.com/galaxy-s10/billd-desk-electron`;
 export const WEB_DESK_URL = `https://desk.hsslive.cn`;
 
-export const appBuildInfo =
-  // @ts-ignore
-  process.env.BilldHtmlWebpackPlugin as BilldHtmlWebpackPluginLog;
+export const AUTHOR_INFO = {
+  github: 'https://github.com/galaxy-s10',
+  wechat: 'shuisheng9905',
+  qq: '2274751790',
+};
+
+// @ts-ignore
+export const APP_BUILD_INFO = process.env
+  .BilldHtmlWebpackPlugin as BilldHtmlWebpackPluginLog;
 
 export const NODE_ENV = process.env.NODE_ENV;
 
 // ======本地调试=====
 
-const localhostIp = '10.10.20.99:4300';
+const localhostIp = '192.168.1.104:4300';
 
 export const WEBSOCKET_URL =
   process.env.NODE_ENV === 'development'

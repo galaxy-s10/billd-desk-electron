@@ -7,7 +7,7 @@ import { useNetworkStore } from '@/store/network';
 import { WsCandidateType, WsMsgTypeEnum } from '@/types/websocket';
 
 export class WebRTCClass {
-  roomId = '-1';
+  roomId = '';
   sender = '';
   receiver = '';
 
@@ -448,7 +448,6 @@ export class WebRTCClass {
           if (this.maxBitrate !== -1) {
             this.setMaxBitrate(this.maxBitrate);
           }
-          console.log('maxBitrate', this.maxBitrate);
         }
         if (connectionState === 'disconnected') {
           // 表示至少有一个 ICE 连接处于 disconnected 状态，并且没有连接处于 failed、connecting 或 checking 状态。
@@ -554,7 +553,7 @@ export class WebRTCClass {
           // maxRetransmits，用户代理应尝试重新传输在不可靠模式下第一次失败的消息的最大次数。虽然该值是 16 位无符号数，但每个用户代理都可以将其限制为它认为合适的任何最大值。
           maxRetransmits: 3,
           // ordered，表示通过 RTCDataChannel 的信息的到达顺序需要和发送顺序一致 (true), 或者到达顺序不需要和发送顺序一致 (false). 默认：true
-          ordered: true,
+          ordered: false,
           // protocol: 'udp',
         }
       );

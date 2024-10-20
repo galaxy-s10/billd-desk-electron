@@ -50,7 +50,6 @@ export const useNetworkStore = defineStore('network', {
       this.rtcMap.clear();
     },
     removeAllRtc() {
-      console.log(this.rtcMap.size, 'llll');
       this.rtcMap.forEach((item) => {
         console.log('item', item.receiver, item.sender);
         item.close();

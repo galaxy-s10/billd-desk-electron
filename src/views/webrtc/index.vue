@@ -16,181 +16,291 @@
         class="info"
         :class="{ show: showDetail }"
       >
-        <div>wss：{{ WEBSOCKET_URL }}</div>
-        <div>axios：{{ AXIOS_BASEURL }}</div>
-        <n-button @click="windowReload">刷新页面</n-button>
-        <n-button @click="handleDebug">打开调试</n-button>
-        <n-button @click="handleTest">测试</n-button>
-        <div>
-          <span class="item">
-            分辨率：<span v-if="videoSettings?.width">
-              {{ videoSettings?.width || '-' }}x{{
-                videoSettings?.height || '-'
-              }}
-            </span>
-            <span v-else>-</span>
-          </span>
-          <span class="item">
-            帧率：{{ videoSettings?.frameRate?.toFixed(2) || '-' }}
-          </span>
-        </div>
-        <n-input-group>
-          <n-button>窗口id</n-button>
-          <n-input
-            v-model:value="windowId"
-            :style="{ width: '200px' }"
-            disabled
-            placeholder=""
-          />
-          <n-button @click="handleCopy(windowId)">复制</n-button>
-        </n-input-group>
-        <n-input-group>
-          <n-input-group-label>roomId</n-input-group-label>
-          <n-input
-            v-model:value="roomId"
-            :style="{ width: '200px' }"
-            disabled
-            placeholder=""
-          />
-        </n-input-group>
+        <n-space>
+          <n-button @click="windowReload">刷新页面</n-button>
+          <n-button @click="handleDebug">打开调试</n-button>
+          <n-button @click="handleTest">测试</n-button>
+        </n-space>
 
-        <n-input-group>
-          <n-input-group-label>主控uuid</n-input-group-label>
-          <n-input
-            v-model:value="deskUserUuid"
-            :style="{ width: '200px' }"
-            disabled
-            placeholder=""
-          />
-        </n-input-group>
-        <n-input-group>
-          <n-input-group-label>被控uuid</n-input-group-label>
-          <n-input
-            v-model:value="remoteDeskUserUuid"
-            :style="{ width: '200px' }"
-            disabled
-            placeholder=""
-          />
-        </n-input-group>
-        <n-input-group>
-          <n-button>我的设备</n-button>
-          <n-input
-            v-model:value="mySocketId"
-            :style="{ width: '200px' }"
-            disabled
-            placeholder=""
-          />
-          <n-button @click="handleCopy(mySocketId)">复制</n-button>
-        </n-input-group>
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>版本号</n-input-group-label>
+            <n-input
+              :value="appStore.version"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>最近更新</n-input-group-label>
+            <n-input
+              :value="appStore.lastBuildDate"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+        </n-space>
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>wss</n-input-group-label>
+            <n-input
+              :value="WEBSOCKET_URL"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>axios</n-input-group-label>
+            <n-input
+              :value="AXIOS_BASEURL"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+        </n-space>
 
-        <n-input-group>
-          <n-button>控制设备</n-button>
-          <n-input
-            v-model:value="receiverId"
-            :style="{ width: '200px' }"
-            disabled
-            placeholder=""
-          />
-          <n-button @click="handleCopy(receiverId)">复制</n-button>
-        </n-input-group>
-        <div class="rtc-info">
-          <span class="item">
-            分辨率：<span v-if="videoSettings?.width">
-              {{ videoSettings?.width || '-' }}x{{
-                videoSettings?.height || '-'
-              }}
-            </span>
-            <span v-else>-</span>
-          </span>
-          <span class="item">
-            帧率：{{ videoSettings?.frameRate?.toFixed(2) || '-' }}
-          </span>
-          <span class="item">延迟：{{ rtcRtt || '-' }}</span>
-          <span class="item">丢包：{{ rtcLoss || '-' }}</span>
-        </div>
-        <div class="rtc-config">
-          <div class="item">
-            <div class="txt">模式：</div>
-            <n-radio
-              :checked="isWatchMode === 'on'"
-              value="on"
-              name="basic-demo"
-              @change="handleChange"
-            >
-              观看模式
-            </n-radio>
-            <n-radio
-              :checked="isWatchMode === 'off'"
-              value="off"
-              name="basic-demo"
-              @change="handleChange"
-            >
-              控制模式
-            </n-radio>
-          </div>
-          <div class="item">
-            <div class="txt">码率：</div>
-            <div class="down">
-              <n-select
-                size="small"
-                v-model:value="currentMaxBitrate"
-                :options="maxBitrate"
-              />
-            </div>
-          </div>
-          <div class="item">
-            <div class="txt">帧率：</div>
-            <div class="down">
-              <n-select
-                size="small"
-                v-model:value="currentMaxFramerate"
-                :options="maxFramerate"
-              />
-            </div>
-          </div>
-          <div class="item">
-            <div class="txt">分辨率：</div>
-            <div class="down big">
-              <n-select
-                size="small"
-                v-model:value="currentResolutionRatio"
-                :options="resolutionRatio"
-              />
-            </div>
-          </div>
-          <div class="item">
-            <div class="txt">视频内容：</div>
-            <div class="down">
-              <n-select
-                size="small"
-                v-model:value="currentVideoContentHint"
-                :options="videoContentHint"
-              />
-            </div>
-          </div>
-          <div class="item">
-            <div class="txt">音频内容：</div>
-            <div class="down big">
-              <n-select
-                size="small"
-                v-model:value="currentAudioContentHint"
-                :options="audioContentHint"
-              />
-            </div>
-          </div>
-        </div>
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>作者微信</n-input-group-label>
+            <n-input
+              :value="AUTHOR_INFO.wechat"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleCopy(AUTHOR_INFO.wechat)">复制</n-button>
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>作者QQ</n-input-group-label>
+            <n-input
+              :value="AUTHOR_INFO.qq"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleCopy(AUTHOR_INFO.qq)">复制</n-button>
+          </n-input-group>
+        </n-space>
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>github</n-input-group-label>
+            <n-input
+              :value="PROJECT_GITHUB"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleOpenExternal(PROJECT_GITHUB)">
+              打开
+            </n-button>
+            <n-button @click="handleCopy(PROJECT_GITHUB)">复制</n-button>
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>web端</n-input-group-label>
+            <n-input
+              @click="handleOpenExternal(WEB_DESK_URL)"
+              :value="WEB_DESK_URL"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleOpenExternal(WEB_DESK_URL)">打开</n-button>
+            <n-button @click="handleCopy(WEB_DESK_URL)">复制</n-button>
+          </n-input-group>
+        </n-space>
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>roomId</n-input-group-label>
+            <n-input
+              v-model:value="roomId"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleCopy(roomId)">复制</n-button>
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>socketId</n-input-group-label>
+            <n-input
+              v-model:value="mySocketId"
+              placeholder=""
+              disabled
+            />
+            <n-button @click="handleCopy(mySocketId)">复制</n-button>
+          </n-input-group>
+        </n-space>
+
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>主控uuid</n-input-group-label>
+            <n-input
+              v-model:value="deskUserUuid"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleCopy(deskUserUuid)">复制</n-button>
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>主控密码</n-input-group-label>
+            <n-input
+              v-model:value="deskUserPassword"
+              placeholder=""
+            />
+            <n-button @click="handleCopy(deskUserPassword)">复制</n-button>
+          </n-input-group>
+        </n-space>
+
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>被控uuid</n-input-group-label>
+            <n-input
+              v-model:value="remoteDeskUserUuid"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleCopy(remoteDeskUserUuid)">复制</n-button>
+          </n-input-group>
+
+          <n-input-group>
+            <n-input-group-label>被控socketId</n-input-group-label>
+            <n-input
+              v-model:value="receiverId"
+              disabled
+              placeholder=""
+            />
+            <n-button @click="handleCopy(receiverId)">复制</n-button>
+          </n-input-group>
+        </n-space>
+
+        <n-space>
+          <div>模式：</div>
+          <n-radio
+            :checked="!isWatchMode"
+            @change="isWatchMode = !isWatchMode"
+          >
+            控制模式
+          </n-radio>
+          <n-radio
+            :checked="isWatchMode"
+            @change="isWatchMode = !isWatchMode"
+          >
+            观看模式
+          </n-radio>
+        </n-space>
+
+        <n-space>
+          <div>鼠标：</div>
+          <n-radio
+            :checked="showCursor"
+            @change="showCursor = !showCursor"
+          >
+            显示
+          </n-radio>
+          <n-radio
+            :checked="!showCursor"
+            @change="showCursor = !showCursor"
+          >
+            隐藏
+          </n-radio>
+        </n-space>
+
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>分辨率</n-input-group-label>
+            <n-input
+              :value="videoSettings?.width + 'x' + videoSettings?.height"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>帧率</n-input-group-label>
+            <n-input
+              :value="videoSettings?.frameRate?.toFixed(2)"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+        </n-space>
+
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>延迟</n-input-group-label>
+            <n-input
+              :value="rtcRtt"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>丢包</n-input-group-label>
+            <n-input
+              :value="rtcLoss"
+              disabled
+              placeholder=""
+            />
+          </n-input-group>
+        </n-space>
+
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>码率</n-input-group-label>
+            <n-select
+              class="down"
+              v-model:value="currentMaxBitrate"
+              :options="maxBitrate"
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>帧率</n-input-group-label>
+            <n-select
+              class="down"
+              v-model:value="currentMaxFramerate"
+              :options="maxFramerate"
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>分辨率</n-input-group-label>
+            <n-select
+              class="down"
+              v-model:value="currentResolutionRatio"
+              :options="resolutionRatio"
+            />
+          </n-input-group>
+        </n-space>
+        <n-space>
+          <n-input-group>
+            <n-input-group-label>视频内容</n-input-group-label>
+            <n-select
+              class="down"
+              v-model:value="currentVideoContentHint"
+              :options="videoContentHint"
+            />
+          </n-input-group>
+          <n-input-group>
+            <n-input-group-label>音频内容</n-input-group-label>
+            <n-select
+              class="down"
+              v-model:value="currentAudioContentHint"
+              :options="audioContentHint"
+            />
+          </n-input-group>
+        </n-space>
       </div>
     </div>
 
     <div
       class="remote-video"
       ref="videoWrapRef"
+      :class="{ 'hide-cursor': !showCursor, watch: isWatchMode }"
       @mousedown="handleMouseDown"
       @mousemove="handleMouseMove"
       @mouseup="handleMouseUp"
       @dblclick="handleDoublelclick"
       @contextmenu="handleContextmenu"
     ></div>
+
+    <div
+      class="loading"
+      v-if="loading"
+    >
+      正在连接...
+    </div>
   </div>
 </template>
 
@@ -206,7 +316,14 @@ import {
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { AXIOS_BASEURL, WEBSOCKET_URL } from '@/constant';
+import {
+  AUTHOR_INFO,
+  AXIOS_BASEURL,
+  PROJECT_GITHUB,
+  WEB_DESK_URL,
+  WEBSOCKET_URL,
+} from '@/constant';
+import { IPC_EVENT } from '@/event';
 import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
@@ -225,12 +342,13 @@ import {
   WsConnectStatusEnum,
   WsMsgTypeEnum,
 } from '@/types/websocket';
-import { videoFullBox } from '@/utils';
+import { ipcRendererSend, videoFullBox } from '@/utils';
 
 const route = useRoute();
 const {
   initWs,
   remoteDeskUserUuid,
+  remoteDeskUserPassword,
   deskUserUuid,
   deskUserPassword,
   connectStatus,
@@ -240,9 +358,6 @@ const networkStore = useNetworkStore();
 
 const titlebarHeight = ref(50);
 
-// const { updateWebRtcRemoteDeskConfig, webRtcRemoteDesk } =
-//   useWebRtcRemoteDesk();
-
 const {
   maxBitrate,
   maxFramerate,
@@ -251,7 +366,9 @@ const {
   videoContentHint,
 } = useRTCParams();
 
-const isWatchMode = ref<'on' | 'off'>('on');
+const loading = ref(true);
+const isWatchMode = ref(false);
+const showCursor = ref(true);
 const receiverId = ref('');
 const loopBilldDeskUpdateUserTimer = ref();
 const showDetail = ref(true);
@@ -265,7 +382,6 @@ const currentResolutionRatio = ref(resolutionRatio.value[3].value);
 const currentVideoContentHint = ref(videoContentHint.value[3].value);
 const currentAudioContentHint = ref(audioContentHint.value[0].value);
 
-const isDown = ref(false);
 let clickTimer: any;
 let isLongClick = false;
 const videoWrapRef = ref<HTMLVideoElement>();
@@ -274,11 +390,12 @@ const roomId = ref('');
 const anchorStream = ref<MediaStream>();
 const ioFlag = ref(false);
 const videoMap = ref(new Map());
-const showLoading = ref(true);
 // const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '';
 });
+
+const ipcRenderer = window.electronAPI.ipcRenderer;
 
 const rtcRtt = computed(() => {
   const arr: string[] = [];
@@ -393,9 +510,9 @@ watch(
 onUnmounted(() => {
   clearInterval(loopBilldDeskUpdateUserTimer.value);
   videoWrapRef.value?.removeEventListener('wheel', handleMouseWheel);
+  window.removeEventListener('keydown', handleKeyDown);
   networkStore.removeAllWsAndRtc();
   handleClose();
-  window.removeEventListener('keydown', handleKeyDown);
 });
 
 function handleLoopBilldDeskUpdateUserTimer() {
@@ -416,6 +533,7 @@ function handleLoopBilldDeskUpdateUserTimer() {
         deskUserUuid: deskUserUuid.value,
         deskUserPassword: deskUserPassword.value,
         remoteDeskUserUuid: remoteDeskUserUuid.value,
+        remoteDeskUserPassword: remoteDeskUserPassword.value,
       },
     });
   }, 1000 * 2);
@@ -465,6 +583,7 @@ function handleWsMsg() {
       deskUserUuid: deskUserUuid.value,
       deskUserPassword: deskUserPassword.value,
       remoteDeskUserUuid: remoteDeskUserUuid.value,
+      remoteDeskUserPassword: remoteDeskUserPassword.value,
     },
   });
 }
@@ -509,6 +628,14 @@ onMounted(() => {
     window.$message.error('remoteDeskUserUuid为空');
     return;
   }
+  if (route.query.remoteDeskUserPassword !== undefined) {
+    remoteDeskUserPassword.value = `${
+      route.query.remoteDeskUserPassword as string
+    }`;
+  } else {
+    window.$message.error('remoteDeskUserPassword为空');
+    return;
+  }
   handleLoopBilldDeskUpdateUserTimer();
   videoWrapRef.value?.addEventListener('wheel', handleMouseWheel);
   window.addEventListener('keydown', handleKeyDown);
@@ -517,7 +644,6 @@ onMounted(() => {
     isAnchor: false,
     isRemoteDesk: true,
   });
-  // handleWsMsg();
   loopGetSettings();
 
   if (route.query.width && route.query.height) {
@@ -529,80 +655,79 @@ onMounted(() => {
     windowId.value = `${route.query.windowId as string}`;
   }
 
-  window.electronAPI.ipcRenderer.send('getChildWindowTitlebarHeight', {
-    requestId: getRandomString(8),
-    windowId: windowId.value,
+  ipcRendererSend({
+    channel: IPC_EVENT.getChildWindowTitlebarHeight,
+    data: { requestId: getRandomString(8), data: { windowId: windowId.value } },
   });
   handleIpcRenderer();
 });
 
 function handleIpcRenderer() {
-  window.electronAPI.ipcRenderer.on(
-    'getChildWindowTitlebarHeightRes',
-    (_event, source) => {
-      console.log('getChildWindowTitlebarHeightRes', source);
-      titlebarHeight.value = source.titlebarHeight;
+  ipcRenderer.on(
+    IPC_EVENT.response_getChildWindowTitlebarHeight,
+    (_event, data) => {
+      titlebarHeight.value = data.titlebarHeight;
     }
   );
 
-  window.electronAPI.ipcRenderer.on('childWindowClose', () => {
+  ipcRenderer.on(IPC_EVENT.response_closeChildWindow, () => {
     networkStore.removeAllWsAndRtc();
     handleClose();
   });
 
-  window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
-    console.log('getMainWindowIdRes', source);
-    windowId.value = `${source.id as string}`;
+  ipcRenderer.on(IPC_EVENT.response_getMainWindowId, (_event, data) => {
+    windowId.value = `${data.id as string}`;
   });
 
-  window.electronAPI.ipcRenderer.on('createWindowRes', (_event, source) => {
-    console.log('createWindowRes', source);
-    window.electronAPI.ipcRenderer.send('childWindowInit', {
-      requestId: getRandomString(8),
-      type: 'childWindowInit',
-      data: { id: source.id },
+  ipcRenderer.on(IPC_EVENT.response_createWindow, (_event, data) => {
+    ipcRendererSend({
+      channel: IPC_EVENT.childWindowInit,
+      data: {
+        requestId: getRandomString(8),
+        data: { id: data.id },
+      },
     });
   });
-  window.electronAPI.ipcRenderer.on('getMousePositionRes', (_event, source) => {
-    console.log('getMousePositionRes', source);
-  });
-  window.electronAPI.ipcRenderer.on('mouseMoveRes', (_event, source) => {
-    console.log('mouseMoveRes', source);
-  });
-  window.electronAPI.ipcRenderer.on('mouseDragRes', (_event, source) => {
-    console.log('mouseDragRes', source);
-  });
-  window.electronAPI.ipcRenderer.on('mouseSetPositionRes', (_event, source) => {
-    console.log('mouseSetPositionRes', source);
-  });
-  window.electronAPI.ipcRenderer.on('mouseDoubleClickRes', (_event, source) => {
-    console.log('mouseDoubleClickRes', source);
-  });
-  window.electronAPI.ipcRenderer.on(
-    'mousePressButtonLeftRes',
-    (_event, source) => {
-      console.log('mousePressButtonLeftRes', source);
-    }
-  );
-  window.electronAPI.ipcRenderer.on(
-    'mouseReleaseButtonLeftRes',
-    (_event, source) => {
-      console.log('mouseReleaseButtonLeftRes', source);
-    }
-  );
-  window.electronAPI.ipcRenderer.on('keyboardTypeRes', (_event, source) => {
-    console.log('keyboardTypeRes', source);
-  });
-  window.electronAPI.ipcRenderer.on('mouseLeftClickRes', (_event, source) => {
-    console.log('mouseLeftClickRes', source);
-  });
-  window.electronAPI.ipcRenderer.on('mouseRightClickRes', (_event, source) => {
-    console.log('mouseRightClickRes', source);
-  });
-}
 
-function handleChange(e) {
-  isWatchMode.value = e.target.value;
+  ipcRenderer.on(IPC_EVENT.response_getMousePosition, (_event, data) => {
+    console.log(IPC_EVENT.response_getMousePosition, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseMove, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseMove, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseDrag, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseDrag, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseSetPosition, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseSetPosition, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseDoubleClick, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseDoubleClick, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mousePressButtonLeft, (_event, data) => {
+    console.log(IPC_EVENT.response_mousePressButtonLeft, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseReleaseButtonLeft, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseReleaseButtonLeft, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_keyboardType, (_event, data) => {
+    console.log(IPC_EVENT.response_keyboardType, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseLeftClick, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseLeftClick, data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseRightClick, (_event, data) => {
+    console.log(IPC_EVENT.response_mouseRightClick, data);
+  });
 }
 
 function loopGetSettings() {
@@ -613,7 +738,6 @@ function loopGetSettings() {
       ?.localStream?.getVideoTracks()
       .forEach((item) => {
         videoSettings.value = item.getSettings();
-        console.log(JSON.stringify(videoSettings.value));
       });
   }, 1000);
 }
@@ -652,6 +776,7 @@ function loopGetSettings() {
 // }
 
 function handleMouseWheel(e: WheelEvent) {
+  if (isWatchMode.value) return;
   e.preventDefault();
   if (e.deltaY > 0) {
     networkStore.rtcMap
@@ -756,17 +881,6 @@ function handleClose() {
 // }
 
 watch(
-  () => appStore.remoteDesk.get(receiverId.value)?.isClose,
-  (newval) => {
-    // eslint-disable-next-line
-    window.$message.warning(`isClose-${newval}`);
-    if (newval) {
-      // reInit();
-    }
-  }
-);
-
-watch(
   () => networkStore.rtcMap.get(receiverId.value)?.cbDataChannel,
   (newval) => {
     if (newval) {
@@ -823,8 +937,12 @@ watch(
     newVal.forEach((item) => {
       if (videoWrapRef.value) {
         if (videoMap.value.has(item.receiver)) {
+          if (item.peerConnection?.iceConnectionState === 'connected') {
+            loading.value = false;
+          }
           return;
         }
+
         videoMap.value.set(item.receiver, 1);
         item.videoEl.addEventListener('loadedmetadata', () => {
           if (!videoWrapRef.value) return;
@@ -846,14 +964,18 @@ watch(
             videoEl: item.videoEl,
           });
           if (res.width && res.height) {
-            window.electronAPI.ipcRenderer.send('setChildWindowBounds', {
-              requestId: getRandomString(8),
-              windowId: windowId.value,
-              width: Math.ceil(res.width),
-              height: Math.ceil(res.height + titlebarHeight.value),
+            ipcRendererSend({
+              channel: IPC_EVENT.setChildWindowBounds,
+              data: {
+                requestId: getRandomString(8),
+                data: {
+                  windowId: windowId.value,
+                  width: Math.ceil(res.width),
+                  height: Math.ceil(res.height + titlebarHeight.value),
+                },
+              },
             });
           }
-          showLoading.value = false;
         });
         videoWrapRef.value.appendChild(item.videoEl);
       }
@@ -879,8 +1001,18 @@ function handleCopy(str) {
   window.$message.success('复制成功');
 }
 
+function handleOpenExternal(url) {
+  ipcRendererSend({
+    channel: IPC_EVENT.shellOpenExternal,
+    data: {
+      requestId: getRandomString(8),
+      data: { url },
+    },
+  });
+}
+
 function handleKeyDown(e: KeyboardEvent) {
-  console.log(e.key, e.code);
+  if (isWatchMode.value) return;
   const keyMap = {
     Delete: Key.Delete,
     Enter: Key.Enter,
@@ -950,7 +1082,6 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 function handleDoublelclick() {
-  console.log('handleDoublelclick');
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -970,7 +1101,6 @@ function handleDoublelclick() {
 }
 
 function handleContextmenu() {
-  console.log('handleContextmenu');
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -990,7 +1120,6 @@ function handleContextmenu() {
 }
 
 function handleMouseDown(event: MouseEvent) {
-  isDown.value = true;
   clickTimer = setTimeout(function () {
     console.log('长按');
     isLongClick = true;
@@ -1075,7 +1204,6 @@ function handleMouseUp(event: MouseEvent) {
   if (clickTimer) {
     clearTimeout(clickTimer);
   }
-  isDown.value = false;
   // 获取点击相对于视窗的位置
   const clickX = event.clientX;
   const clickY = event.clientY;
@@ -1115,87 +1243,105 @@ function handleMouseUp(event: MouseEvent) {
 }
 
 function mouseSetPosition({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseSetPosition', data);
-  window.electronAPI.ipcRenderer.send('mouseSetPosition', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseSetPosition,
+    data: {
+      requestId: getRandomString(8),
+      data: { x, y },
+    },
+  });
 }
+
 function mouseMove({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseMove', data);
-  window.electronAPI.ipcRenderer.send('mouseMove', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseMove,
+    data: {
+      requestId: getRandomString(8),
+      data: { x, y },
+    },
+  });
 }
+
 function mouseDrag({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseDrag', data);
-  window.electronAPI.ipcRenderer.send('mouseDrag', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseDrag,
+    data: {
+      requestId: getRandomString(8),
+      data: { x, y },
+    },
+  });
 }
+
 function mouseDoubleClick() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('mouseDoubleClick', data);
-  window.electronAPI.ipcRenderer.send('mouseDoubleClick', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseDoubleClick,
+    data: {
+      requestId: getRandomString(8),
+      data: {},
+    },
+  });
 }
+
 function mousePressButtonLeft() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('mousePressButtonLeft', data);
-  window.electronAPI.ipcRenderer.send('mousePressButtonLeft', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mousePressButtonLeft,
+    data: {
+      requestId: getRandomString(8),
+      data: {},
+    },
+  });
 }
+
 function keyboardType({ key }) {
-  const data = {
-    requestId: getRandomString(8),
-    key,
-  };
-  console.log('keyboardType', data);
-  window.electronAPI.ipcRenderer.send('keyboardType', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.keyboardType,
+    data: {
+      requestId: getRandomString(8),
+      data: { key },
+    },
+  });
 }
+
 function mouseReleaseButtonLeft() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('mouseReleaseButtonLeft', data);
-  window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseReleaseButtonLeft,
+    data: {
+      requestId: getRandomString(8),
+      data: {},
+    },
+  });
 }
+
 function mouseLeftClick({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseSetPosition', data);
-  window.electronAPI.ipcRenderer.send('mouseLeftClick', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseLeftClick,
+    data: {
+      requestId: getRandomString(8),
+      data: { x, y },
+    },
+  });
 }
+
 function mouseRightClick({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseRightClick', data);
-  window.electronAPI.ipcRenderer.send('mouseRightClick', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseRightClick,
+    data: {
+      requestId: getRandomString(8),
+      data: { x, y },
+    },
+  });
 }
+
 function handleDebug() {
-  const data = {
-    requestId: getRandomString(8),
-    windowId: windowId.value,
-  };
-  console.log('handleDebug', data);
-  window.electronAPI.ipcRenderer.send('handleOpenDevTools', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.handleOpenDevTools,
+    data: {
+      requestId: getRandomString(8),
+      data: { windowId: windowId.value },
+    },
+  });
 }
+
 function handleTest() {
   // mouseMove({ x: 690, y: 478 });
   networkStore.rtcMap
@@ -1299,6 +1445,7 @@ function handleTest() {
       rgba(0, 0, 0, 0.05) 0px 5px 10px;
     .txt {
       cursor: pointer;
+
       user-select: none;
     }
     .info {
@@ -1306,14 +1453,16 @@ function handleTest() {
       top: 100%;
       left: 0;
       display: none;
+      box-sizing: border-box;
       padding: 10px;
+      width: 800px;
       background-color: white;
       box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
       &.show {
         display: block;
       }
-      .input-upload {
-        opacity: 0;
+      .down {
+        width: 150px;
       }
     }
   }
@@ -1321,20 +1470,18 @@ function handleTest() {
     width: 100vw;
     height: 100vh;
     line-height: 0;
-    // cursor: none;
+    &.hide-cursor {
+      cursor: none;
+    }
+    &.watch {
+      pointer-events: none;
+    }
   }
-}
-.loading {
-  background-color: #fff !important;
-
-  @extend %maskBg;
-
-  .txt {
-    position: absolute;
+  .loading {
+    position: fixed;
     top: 50%;
     left: 50%;
-    text-align: center;
-    font-size: 20px;
+    font-size: 30px;
     transform: translate(-50%, -50%);
   }
 }

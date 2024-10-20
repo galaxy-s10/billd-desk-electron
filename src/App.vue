@@ -10,6 +10,8 @@ import { onMounted } from 'vue';
 
 import { useAppStore } from '@/store/app';
 
+import { APP_BUILD_INFO } from './constant';
+
 const appStore = useAppStore();
 const themeOverrides: GlobalThemeOverrides = {
   common: {
@@ -19,7 +21,8 @@ const themeOverrides: GlobalThemeOverrides = {
 };
 
 onMounted(() => {
-  appStore.version = process.env.VUE_APP_RELEASE_PROJECT_VERSION || '';
+  appStore.version = APP_BUILD_INFO.pkgVersion;
+  appStore.lastBuildDate = APP_BUILD_INFO.lastBuildDate;
 });
 </script>
 

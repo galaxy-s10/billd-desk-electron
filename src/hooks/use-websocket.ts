@@ -77,6 +77,7 @@ export const useWebsocket = () => {
   const isAnchor = ref(false);
   const isRemoteDesk = ref(false);
   const remoteDeskUserUuid = ref('');
+  const remoteDeskUserPassword = ref('');
   const deskUserUuid = ref('');
   const deskUserPassword = ref('');
   const anchorInfo = ref<IUser>();
@@ -247,7 +248,6 @@ export const useWebsocket = () => {
 
   function initReceive() {
     const ws = networkStore.wsMap.get(roomId.value);
-    console.log(ws, roomId.value, ';llll');
     if (!ws?.socketIo) return;
     // websocket连接成功
     ws.socketIo.on(WsConnectStatusEnum.connect, () => {
@@ -822,6 +822,7 @@ export const useWebsocket = () => {
     deskUserUuid,
     deskUserPassword,
     remoteDeskUserUuid,
+    remoteDeskUserPassword,
     connectStatus,
     mySocketId,
     canvasVideoStream,

@@ -5,6 +5,11 @@ import {
 } from './types/ILiveRoom';
 import { IUser } from './types/IUser';
 
+export interface IIpcRendererData {
+  requestId: string;
+  data: any;
+}
+
 export interface IFlvStatistics {
   url: string;
   hasRedirect: boolean;

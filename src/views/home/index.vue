@@ -1,45 +1,96 @@
 <template>
   <div>
-    {{ position }}
-    <div>
-      <div>
-        <div>{{ suspend }}</div>
-        <div>{{ resume }}</div>
-        <div>version：{{ appStore.version }}</div>
-        <div>wss：{{ WEBSOCKET_URL }}</div>
-        <div>axios：{{ AXIOS_BASEURL }}</div>
-        <div>
-          github：<span
-            class="link"
-            @click="handleCopy(PROJECT_GITHUB)"
-          >
-            {{ PROJECT_GITHUB }}
-          </span>
-        </div>
-        <div>
-          web端：<span
-            class="link"
-            @click="handleCopy(WEB_DESK_URL)"
-          >
-            {{ WEB_DESK_URL }}
-          </span>
-        </div>
-      </div>
+    <n-space>
+      <n-button @click="windowReload">刷新页面</n-button>
+      <n-button @click="handleDebug">打开调试</n-button>
+      <n-button @click="handleTest">测试</n-button>
+    </n-space>
+
+    <n-space>
       <n-input-group>
-        <n-input-group-label>窗口id</n-input-group-label>
+        <n-input-group-label>版本号</n-input-group-label>
         <n-input
-          v-model:value="windowId"
-          :style="{ width: '200px' }"
-          placeholder=""
+          :value="appStore.version"
           disabled
+          placeholder=""
         />
-        <n-button @click="handleCopy(windowId)">复制</n-button>
       </n-input-group>
+      <n-input-group>
+        <n-input-group-label>最近更新</n-input-group-label>
+        <n-input
+          :value="appStore.lastBuildDate"
+          disabled
+          placeholder=""
+        />
+      </n-input-group>
+    </n-space>
+    <n-space>
+      <n-input-group>
+        <n-input-group-label>wss</n-input-group-label>
+        <n-input
+          :value="WEBSOCKET_URL"
+          disabled
+          placeholder=""
+        />
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>axios</n-input-group-label>
+        <n-input
+          :value="AXIOS_BASEURL"
+          disabled
+          placeholder=""
+        />
+      </n-input-group>
+    </n-space>
+    <n-space>
+      <n-input-group>
+        <n-input-group-label>作者微信</n-input-group-label>
+        <n-input
+          :value="AUTHOR_INFO.wechat"
+          disabled
+          placeholder=""
+        />
+        <n-button @click="handleCopy(AUTHOR_INFO.wechat)">复制</n-button>
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>作者QQ</n-input-group-label>
+        <n-input
+          :value="AUTHOR_INFO.qq"
+          disabled
+          placeholder=""
+        />
+        <n-button @click="handleCopy(AUTHOR_INFO.qq)">复制</n-button>
+      </n-input-group>
+    </n-space>
+    <n-space>
+      <n-input-group>
+        <n-input-group-label>github</n-input-group-label>
+        <n-input
+          :value="PROJECT_GITHUB"
+          disabled
+          placeholder=""
+        />
+        <n-button @click="handleOpenExternal(PROJECT_GITHUB)">打开</n-button>
+        <n-button @click="handleCopy(PROJECT_GITHUB)">复制</n-button>
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>web端</n-input-group-label>
+        <n-input
+          @click="handleOpenExternal(WEB_DESK_URL)"
+          :value="WEB_DESK_URL"
+          disabled
+          placeholder=""
+        />
+        <n-button @click="handleOpenExternal(WEB_DESK_URL)">打开</n-button>
+        <n-button @click="handleCopy(WEB_DESK_URL)">复制</n-button>
+      </n-input-group>
+    </n-space>
+
+    <n-space>
       <n-input-group>
         <n-input-group-label>roomId</n-input-group-label>
         <n-input
           v-model:value="roomId"
-          :style="{ width: '200px' }"
           disabled
           placeholder=""
         />
@@ -49,28 +100,28 @@
         <n-input-group-label>socketId</n-input-group-label>
         <n-input
           v-model:value="mySocketId"
-          :style="{ width: '200px' }"
           placeholder=""
           disabled
         />
         <n-button @click="handleCopy(mySocketId)">复制</n-button>
       </n-input-group>
+    </n-space>
+
+    <n-space>
       <n-input-group>
         <n-input-group-label>主控uuid</n-input-group-label>
         <n-input
           v-model:value="cacheStore.deskUserUuid"
-          :style="{ width: '200px' }"
           placeholder=""
           disabled
         />
-        <n-button @click="handleCopy(cacheStore.deskUserUuid)">复制</n-button>
         <n-button @click="handleResetDeskuuid">重置</n-button>
+        <n-button @click="handleCopy(cacheStore.deskUserUuid)">复制</n-button>
       </n-input-group>
       <n-input-group>
         <n-input-group-label>主控密码</n-input-group-label>
         <n-input
           v-model:value="cacheStore.deskUserPassword"
-          :style="{ width: '200px' }"
           @blur="handleUpdatePassword"
           placeholder=""
         />
@@ -78,11 +129,45 @@
           复制
         </n-button>
       </n-input-group>
+    </n-space>
+
+    <n-space align="center">
+      <n-input-group>
+        <n-input-group-label>窗口id</n-input-group-label>
+        <n-input
+          v-model:value="windowId"
+          placeholder=""
+          disabled
+        />
+        <n-button @click="handleCopy(windowId)">复制</n-button>
+      </n-input-group>
+      <n-space>
+        <div>主窗口置顶：</div>
+        <n-radio
+          :checked="isAlwaysOnTop"
+          @change="isAlwaysOnTop = !isAlwaysOnTop"
+        >
+          是
+        </n-radio>
+        <n-radio
+          :checked="!isAlwaysOnTop"
+          @change="isAlwaysOnTop = !isAlwaysOnTop"
+        >
+          否
+        </n-radio>
+      </n-space>
+    </n-space>
+
+    <n-space>
       <n-input-group>
         <n-input-group-label>被控uuid</n-input-group-label>
         <n-input
           v-model:value="cacheStore.remoteDeskUserUuid"
-          :style="{ width: '200px' }"
+          placeholder=""
+        />
+        <n-input-group-label>被控密码</n-input-group-label>
+        <n-input
+          v-model:value="cacheStore.remoteDeskUserPassword"
           placeholder=""
         />
         <n-button
@@ -92,61 +177,54 @@
           开始远程
         </n-button>
       </n-input-group>
-    </div>
-    <div class="rtc-config">
-      <div class="item">
-        <div class="txt">码率：</div>
-        <div class="down">
-          <n-select
-            size="small"
-            v-model:value="currentMaxBitrate"
-            :options="maxBitrate"
-          />
-        </div>
-      </div>
-      <div class="item">
-        <div class="txt">帧率：</div>
-        <div class="down">
-          <n-select
-            size="small"
-            v-model:value="currentMaxFramerate"
-            :options="maxFramerate"
-          />
-        </div>
-      </div>
-      <div class="item">
-        <div class="txt">分辨率：</div>
-        <div class="down big">
-          <n-select
-            size="small"
-            v-model:value="currentResolutionRatio"
-            :options="resolutionRatio"
-          />
-        </div>
-      </div>
-    </div>
-    <div class="rtc-config">
-      <div class="item">
-        <div class="txt">视频内容：</div>
-        <div class="down">
-          <n-select
-            size="small"
-            v-model:value="currentVideoContentHint"
-            :options="videoContentHint"
-          />
-        </div>
-      </div>
-      <div class="item">
-        <div class="txt">音频内容：</div>
-        <div class="down big">
-          <n-select
-            size="small"
-            v-model:value="currentAudioContentHint"
-            :options="audioContentHint"
-          />
-        </div>
-      </div>
-    </div>
+    </n-space>
+
+    <n-space>
+      <n-input-group>
+        <n-input-group-label>码率</n-input-group-label>
+        <n-select
+          class="down"
+          v-model:value="currentMaxBitrate"
+          :options="maxBitrate"
+        />
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>帧率</n-input-group-label>
+        <n-select
+          class="down"
+          v-model:value="currentMaxFramerate"
+          :options="maxFramerate"
+        />
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>分辨率</n-input-group-label>
+        <n-select
+          class="down"
+          v-model:value="currentResolutionRatio"
+          :options="resolutionRatio"
+        />
+      </n-input-group>
+    </n-space>
+
+    <n-space>
+      <n-input-group>
+        <n-input-group-label>视频内容</n-input-group-label>
+        <n-select
+          class="down"
+          v-model:value="currentVideoContentHint"
+          :options="videoContentHint"
+        />
+      </n-input-group>
+      <n-input-group>
+        <n-input-group-label>音频内容</n-input-group-label>
+        <n-select
+          class="down"
+          v-model:value="currentAudioContentHint"
+          :options="audioContentHint"
+        />
+      </n-input-group>
+    </n-space>
+
     <div v-if="!appStore.remoteDesk.size">等待被控</div>
     <div v-else>
       正在被{{ appStore.remoteDesk.size }}个用户控制
@@ -156,11 +234,6 @@
       >
         断开所有远程
       </n-button>
-    </div>
-    <div>
-      <n-button @click="windowReload">刷新页面</n-button>
-      <n-button @click="handleDebug">打开调试</n-button>
-      <n-button @click="handleTest">测试</n-button>
     </div>
     <div class="list">
       <div
@@ -191,11 +264,13 @@ import {
   fetchDeskUserUpdateByUuid,
 } from '@/api/deskUser';
 import {
+  AUTHOR_INFO,
   AXIOS_BASEURL,
   PROJECT_GITHUB,
   WEBSOCKET_URL,
   WEB_DESK_URL,
 } from '@/constant';
+import { IPC_EVENT } from '@/event';
 import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
@@ -220,6 +295,7 @@ import {
 import {
   createNullVideo,
   handlConstraints,
+  ipcRendererSend,
   setAudioTrackContentHints,
   setVideoTrackContentHints,
 } from '@/utils';
@@ -253,6 +329,7 @@ const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 /** 是否控制别人 */
 const isControlOther = ref(false);
+const isAlwaysOnTop = ref(true);
 const chromeMediaSourceId = ref();
 const mySocketId = computed(() => {
   return networkStore.wsMap.get(roomId.value)?.socketIo?.id || '';
@@ -262,7 +339,10 @@ const originalPassword = ref('');
 const loopBilldDeskUpdateUserTimer = ref();
 const suspend = ref('');
 const resume = ref('');
+const scaleFactor = ref(1);
 const position = ref({ x: 0, y: 0 });
+
+const ipcRenderer = window.electronAPI.ipcRenderer;
 
 onUnmounted(() => {
   networkStore.removeAllWsAndRtc();
@@ -288,15 +368,23 @@ function handleLoopBilldDeskUpdateUserTimer() {
         deskUserUuid: cacheStore.deskUserUuid,
         deskUserPassword: cacheStore.deskUserPassword,
         remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
+        remoteDeskUserPassword: cacheStore.remoteDeskUserPassword,
       },
     });
   }, 1000 * 2);
 }
 
+watch(
+  () => isAlwaysOnTop.value,
+  () => {
+    handleMainWindowSetAlwaysOnTop(isAlwaysOnTop.value);
+  },
+  { immediate: true }
+);
+
 async function handleInit() {
   await initUser();
   handleLoopBilldDeskUpdateUserTimer();
-  handleMainWindowSetAlwaysOnTop(true);
   initWs({
     roomId: roomId.value,
     isAnchor: false,
@@ -306,137 +394,145 @@ async function handleInit() {
 onMounted(() => {
   console.log('route.query', route.query);
   handleInit();
-  window.electronAPI.ipcRenderer.send('getMainWindowId', {
-    requestId: getRandomString(8),
-    type: 'getMainWindowId',
+  ipcRendererSend({
+    channel: IPC_EVENT.getMainWindowId,
+    data: { requestId: getRandomString(8), data: {} },
   });
-  setInterval(() => {
-    window.electronAPI.ipcRenderer.send('getWindowPosition', {
-      requestId: getRandomString(8),
-    });
-  }, 1000);
 
-  window.electronAPI.ipcRenderer.on(
-    'powerMonitor-suspend',
-    (_event, source) => {
-      console.log('powerMonitor-suspend', source);
-      suspend.value = `${new Date().toLocaleString()}-suspend`;
+  ipcRendererSend({
+    channel: IPC_EVENT.scaleFactor,
+    data: { requestId: getRandomString(8), data: {} },
+  });
+
+  // setInterval(() => {
+  //   ipcRendererSend({
+  //     channel: IPC_EVENT.getWindowPosition,
+  //     data: { requestId: getRandomString(8), data: {} },
+  //   });
+  // }, 1000);
+
+  ipcRenderer.on(IPC_EVENT.response_scaleFactor, (_event, data) => {
+    if (data.platform !== 'darwin') {
+      scaleFactor.value = data.scaleFactor;
     }
-  );
-  window.electronAPI.ipcRenderer.on(
-    'getWindowPositionRes',
-    (_event, source) => {
-      console.log('getWindowPositionRes', source);
-      position.value = source.position;
-    }
-  );
-  window.electronAPI.ipcRenderer.on('powerMonitor-resume', (_event, source) => {
-    console.log('powerMonitor-resume', source);
-    resume.value = `${new Date().toLocaleString()}-resume`;
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_powerMonitorSuspend, (_event, data) => {
+    console.log('powerMonitorSuspend', data);
+    suspend.value = `${new Date().toLocaleString()}-powerMonitorSuspend`;
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_getWindowPosition, (_event, data) => {
+    console.log('getWindowPosition', data);
+    position.value = data.position;
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_powerMonitorResume, (_event, data) => {
+    console.log('powerMonitorResume', data);
+    resume.value = `${new Date().toLocaleString()}-powerMonitorResume`;
     handleCloseAll();
   });
 
-  window.electronAPI.ipcRenderer.on('workAreaSizeRes', (_event, source) => {
-    console.log('workAreaSizeRes', source);
-    appStore.workAreaSize.width = source.width;
-    appStore.workAreaSize.height = source.height;
+  ipcRenderer.on(IPC_EVENT.response_workAreaSize, (_event, data) => {
+    appStore.workAreaSize.width = data.width;
+    appStore.workAreaSize.height = data.height;
   });
 
-  window.electronAPI.ipcRenderer.on(
-    'getPrimaryDisplaySizeRes',
-    (_event, source) => {
-      console.log('getPrimaryDisplaySizeRes', source);
-      appStore.primaryDisplaySize.width = source.width;
-      appStore.primaryDisplaySize.height = source.height;
-    }
-  );
-
-  window.electronAPI.ipcRenderer.send('workAreaSize', {
-    requestId: getRandomString(8),
-  });
-  window.electronAPI.ipcRenderer.send('getPrimaryDisplaySize', {
-    requestId: getRandomString(8),
+  ipcRenderer.on(IPC_EVENT.response_getPrimaryDisplaySize, (_event, data) => {
+    appStore.primaryDisplaySize.width = data.width;
+    appStore.primaryDisplaySize.height = data.height;
   });
 
-  window.electronAPI.ipcRenderer.on('getMainWindowIdRes', (_event, source) => {
-    console.log('getMainWindowIdRes', source);
-    windowId.value = `${source.id as string}`;
+  ipcRendererSend({
+    channel: IPC_EVENT.workAreaSize,
+    data: { requestId: getRandomString(8), data: {} },
   });
 
-  window.electronAPI.ipcRenderer.on('openRemote', (_event, source) => {
-    console.log('openRemote', source);
+  ipcRendererSend({
+    channel: IPC_EVENT.getPrimaryDisplaySize,
+    data: { requestId: getRandomString(8), data: {} },
   });
 
-  window.electronAPI.ipcRenderer.on('createWindowRes', (_event, source) => {
-    console.log('createWindowRes', source);
-    window.electronAPI.ipcRenderer.send('childWindowInit', {
-      requestId: getRandomString(8),
-      type: 'childWindowInit',
-      data: { id: source.id },
+  ipcRenderer.on(IPC_EVENT.response_getMainWindowId, (_event, data) => {
+    windowId.value = `${data.id as string}`;
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_createWindow, (_event, data) => {
+    ipcRendererSend({
+      channel: IPC_EVENT.childWindowInit,
+      data: { requestId: getRandomString(8), data: { id: data.id } },
     });
   });
-  window.electronAPI.ipcRenderer.on('getMousePositionRes', (_event, source) => {
-    console.log('getMousePositionRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_getMousePosition, (_event, data) => {
+    console.log('getMousePosition', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseScrollDownRes', (_event, source) => {
-    console.log('mouseScrollDownRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseScrollDown, (_event, data) => {
+    console.log('mouseScrollDown', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseScrollUpRes', (_event, source) => {
-    console.log('mouseScrollUpRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseScrollUp, (_event, data) => {
+    console.log('mouseScrollUp', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseScrollLeftRes', (_event, source) => {
-    console.log('mouseScrollLeftRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseScrollLeft, (_event, data) => {
+    console.log('mouseScrollLeft', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseScrollRightRes', (_event, source) => {
-    console.log('mouseScrollRightRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseScrollRight, (_event, data) => {
+    console.log('mouseScrollRight', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseMoveRes', (_event, source) => {
-    console.log('mouseMoveRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseMove, (_event, data) => {
+    console.log('mouseMove', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseDragRes', (_event, source) => {
-    console.log('mouseDragRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseDrag, (_event, data) => {
+    console.log('mouseDrag', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseSetPositionRes', (_event, source) => {
-    console.log('mouseSetPositionRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseSetPosition, (_event, data) => {
+    console.log('mouseSetPosition', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseDoubleClickRes', (_event, source) => {
-    console.log('mouseDoubleClickRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseDoubleClick, (_event, data) => {
+    console.log('mouseDoubleClick', data);
   });
-  window.electronAPI.ipcRenderer.on(
-    'mousePressButtonLeftRes',
-    (_event, source) => {
-      console.log('mousePressButtonLeftRes', source);
-    }
-  );
-  window.electronAPI.ipcRenderer.on(
-    'mouseReleaseButtonLeftRes',
-    (_event, source) => {
-      console.log('mouseReleaseButtonLeftRes', source);
-    }
-  );
-  window.electronAPI.ipcRenderer.on('keyboardTypeRes', (_event, source) => {
-    console.log('keyboardTypeRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mousePressButtonLeft, (_event, data) => {
+    console.log('mousePressButtonLeft', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseLeftClickRes', (_event, source) => {
-    console.log('mouseLeftClickRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseReleaseButtonLeft, (_event, data) => {
+    console.log('mouseReleaseButtonLeft', data);
   });
-  window.electronAPI.ipcRenderer.on('mouseRightClickRes', (_event, source) => {
-    console.log('mouseRightClickRes', source);
+
+  ipcRenderer.on(IPC_EVENT.response_keyboardType, (_event, data) => {
+    console.log('keyboardType', data);
   });
-  window.electronAPI.ipcRenderer.on('getScreenStreamRes', (_event, source) => {
-    console.log('收到getScreenStreamRes', source);
-    if (source.isErr) {
-      window.$message.error(source.msg);
+
+  ipcRenderer.on(IPC_EVENT.response_mouseLeftClick, (_event, data) => {
+    console.log('mouseLeftClick', data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_mouseRightClick, (_event, data) => {
+    console.log('mouseRightClick', data);
+  });
+
+  ipcRenderer.on(IPC_EVENT.response_getScreenStream, (_event, data) => {
+    console.log('收到getScreenStream', data);
+    if (data.isErr) {
+      window.$message.error(data.msg);
       return;
     }
-    chromeMediaSourceId.value = source.stream.id;
-    handleDesktopStream(source.stream.id);
+    chromeMediaSourceId.value = data.stream.id;
+    handleDesktopStream(data.stream.id);
   });
 });
 
 async function initUser() {
   if (!cacheStore.deskUserUuid || !cacheStore.deskUserPassword) {
-    console.log('生成账号');
     const res = await fetchDeskUserCreate();
     if (res.code === 200) {
       cacheStore.deskUserUuid = res.data.uuid!;
@@ -449,6 +545,7 @@ async function initUser() {
       uuid: cacheStore.deskUserUuid,
       password: cacheStore.deskUserPassword,
     });
+    originalPassword.value = cacheStore.deskUserPassword;
     if (res.code === 200) {
       roomId.value = cacheStore.deskUserUuid;
     }
@@ -456,6 +553,7 @@ async function initUser() {
 }
 
 async function handleUpdatePassword() {
+  if (cacheStore.deskUserPassword === originalPassword.value) return;
   if (
     cacheStore.deskUserPassword &&
     cacheStore.deskUserPassword.length > 6 &&
@@ -466,6 +564,7 @@ async function handleUpdatePassword() {
       password: originalPassword.value,
       new_password: cacheStore.deskUserPassword!,
     });
+    originalPassword.value = cacheStore.deskUserPassword;
     window.$message.success('更新密码成功！');
   } else {
     window.$message.warning('密码长度要求6-12位！');
@@ -584,35 +683,54 @@ function handleCopy(str) {
   window.$message.success('复制成功');
 }
 
+function handleOpenExternal(url) {
+  ipcRendererSend({
+    channel: IPC_EVENT.shellOpenExternal,
+    data: {
+      requestId: getRandomString(8),
+      data: { url },
+    },
+  });
+}
+
 function startRemote() {
   if (cacheStore.remoteDeskUserUuid === '') {
     window.$message.warning('请输入被控uuid');
     return;
   }
+  if (cacheStore.remoteDeskUserPassword === '') {
+    window.$message.warning('请输入被控密码');
+    return;
+  }
 
   isControlOther.value = true;
-  window.electronAPI.ipcRenderer.send('createWindow', {
-    requestId: getRandomString(8),
-    type: 'createWindow',
+
+  ipcRendererSend({
+    channel: IPC_EVENT.createWindow,
     data: {
-      route: routerName.webrtc,
-      query: {
-        roomId: cacheStore.remoteDeskUserUuid,
-        deskUserUuid: cacheStore.deskUserUuid,
-        deskUserPassword: cacheStore.deskUserPassword,
-        remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
-        receiverId: receiverId.value,
-        width: appStore.workAreaSize.width,
-        height: appStore.workAreaSize.height,
-        maxBitrate: currentMaxBitrate.value,
-        maxFramerate: currentMaxFramerate.value,
-        resolutionRatio: currentResolutionRatio.value,
-        audioContentHint: currentAudioContentHint.value,
-        videoContentHint: currentVideoContentHint.value,
+      requestId: getRandomString(8),
+      data: {
+        route: routerName.webrtc,
+        query: {
+          roomId: cacheStore.remoteDeskUserUuid,
+          deskUserUuid: cacheStore.deskUserUuid,
+          deskUserPassword: cacheStore.deskUserPassword,
+          remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
+          remoteDeskUserPassword: cacheStore.remoteDeskUserPassword,
+          receiverId: receiverId.value,
+          width: appStore.workAreaSize.width,
+          height: appStore.workAreaSize.height,
+          maxBitrate: currentMaxBitrate.value,
+          maxFramerate: currentMaxFramerate.value,
+          resolutionRatio: currentResolutionRatio.value,
+          audioContentHint: currentAudioContentHint.value,
+          videoContentHint: currentVideoContentHint.value,
+          scaleFactor: scaleFactor.value,
+        },
+        x: 0,
+        y: 0,
+        useWorkAreaSize: true,
       },
-      x: 0,
-      y: 0,
-      useWorkAreaSize: true,
     },
   });
 }
@@ -687,9 +805,13 @@ watch(
           const { data }: { data: WsBilldDeskBehaviorType['data'] } = jsondata;
           if (appStore.primaryDisplaySize) {
             const x =
-              (appStore.primaryDisplaySize.width || 0) * (data.x / 1000);
+              (appStore.primaryDisplaySize.width || 0) *
+              scaleFactor.value *
+              (data.x / 1000);
             const y =
-              (appStore.primaryDisplaySize.height || 0) * (data.y / 1000);
+              (appStore.primaryDisplaySize.height || 0) *
+              scaleFactor.value *
+              (data.y / 1000);
             if (data.type === BilldDeskBehaviorEnum.setPosition) {
               mouseSetPosition({ x, y });
             } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {
@@ -784,104 +906,97 @@ watch(
 
 /** 将程序主窗口移动到屏幕右下角 */
 function handleMoveScreenRightBottom() {
-  window.electronAPI.ipcRenderer.send('handleMoveScreenRightBottom', {
-    requestId: getRandomString(8),
+  ipcRendererSend({
+    channel: IPC_EVENT.handleMoveScreenRightBottom,
+    data: { requestId: getRandomString(8), data: {} },
   });
 }
+
 /** 将程序主窗口指定 */
 function handleMainWindowSetAlwaysOnTop(flag: boolean) {
-  window.electronAPI.ipcRenderer.send('mainWindowSetAlwaysOnTop', {
-    requestId: getRandomString(8),
-    type: 'mainWindowSetAlwaysOnTop',
-    data: { flag },
+  ipcRendererSend({
+    channel: IPC_EVENT.mainWindowSetAlwaysOnTop,
+    data: { requestId: getRandomString(8), data: { flag } },
   });
 }
 
 function handleScreen() {
-  window.electronAPI.ipcRenderer.send('getScreenStream', {
-    requestId: getRandomString(8),
+  ipcRendererSend({
+    channel: IPC_EVENT.getScreenStream,
+    data: { requestId: getRandomString(8), data: {} },
   });
 }
 
 function mouseSetPosition({ x, y }) {
-  window.electronAPI.ipcRenderer.send('mouseSetPosition', {
-    requestId: getRandomString(8),
-    x,
-    y,
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseSetPosition,
+    data: { requestId: getRandomString(8), data: { x, y } },
   });
 }
+
 function mouseMove({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseMove', data);
-  window.electronAPI.ipcRenderer.send('mouseMove', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseMove,
+    data: { requestId: getRandomString(8), data: { x, y } },
+  });
 }
+
 function mouseDrag({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseDrag', data);
-  window.electronAPI.ipcRenderer.send('mouseDrag', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseDrag,
+    data: { requestId: getRandomString(8), data: { x, y } },
+  });
 }
+
 function mouseDoubleClick() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('mouseDoubleClick', data);
-  window.electronAPI.ipcRenderer.send('mouseDoubleClick', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseDoubleClick,
+    data: { requestId: getRandomString(8), data: {} },
+  });
 }
+
 function mousePressButtonLeft() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('mousePressButtonLeft', data);
-  window.electronAPI.ipcRenderer.send('mousePressButtonLeft', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mousePressButtonLeft,
+    data: { requestId: getRandomString(8), data: {} },
+  });
 }
+
 function keyboardType({ key }) {
-  const data = {
-    requestId: getRandomString(8),
-    key,
-  };
-  console.log('keyboardType', data);
-  window.electronAPI.ipcRenderer.send('keyboardType', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.keyboardType,
+    data: { requestId: getRandomString(8), data: { key } },
+  });
 }
+
 function mouseReleaseButtonLeft() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('mouseReleaseButtonLeft', data);
-  window.electronAPI.ipcRenderer.send('mouseReleaseButtonLeft', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseReleaseButtonLeft,
+    data: { requestId: getRandomString(8), data: {} },
+  });
 }
+
 function mouseLeftClick({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseLeftClick', data);
-  window.electronAPI.ipcRenderer.send('mouseLeftClick', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseLeftClick,
+    data: { requestId: getRandomString(8), data: { x, y } },
+  });
 }
+
 function mouseRightClick({ x, y }) {
-  const data = {
-    requestId: getRandomString(8),
-    x,
-    y,
-  };
-  console.log('mouseRightClick', data);
-  window.electronAPI.ipcRenderer.send('mouseRightClick', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseRightClick,
+    data: { requestId: getRandomString(8), data: { x, y } },
+  });
 }
+
 function handleDebug() {
-  const data = {
-    requestId: getRandomString(8),
-  };
-  console.log('handleDebug', data);
-  window.electronAPI.ipcRenderer.send('handleOpenDevTools', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.handleOpenDevTools,
+    data: { requestId: getRandomString(8), data: {} },
+  });
 }
+
 // function handleTest() {
 //   // mouseMove({ x: 690, y: 478 });
 //   networkStore.rtcMap
@@ -974,56 +1089,39 @@ function handleTest() {
     mouseReleaseButtonLeft();
   }, 300);
 }
+
 function mouseScrollDown({ amount }) {
-  const data = {
-    requestId: getRandomString(8),
-    amount,
-  };
-  console.log('mouseScrollDown', data);
-  window.electronAPI.ipcRenderer.send('mouseScrollDown', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseScrollDown,
+    data: { requestId: getRandomString(8), data: { amount } },
+  });
 }
+
 function mouseScrollUp({ amount }) {
-  const data = {
-    requestId: getRandomString(8),
-    amount,
-  };
-  console.log('mouseScrollUp', data);
-  window.electronAPI.ipcRenderer.send('mouseScrollUp', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseScrollUp,
+    data: { requestId: getRandomString(8), data: { amount } },
+  });
 }
+
 function mouseScrollLeft({ amount }) {
-  const data = {
-    requestId: getRandomString(8),
-    amount,
-  };
-  console.log('mouseScrollLeft', data);
-  window.electronAPI.ipcRenderer.send('mouseScrollLeft', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseScrollLeft,
+    data: { requestId: getRandomString(8), data: { amount } },
+  });
 }
+
 function mouseScrollRight({ amount }) {
-  const data = {
-    requestId: getRandomString(8),
-    amount,
-  };
-  console.log('mouseScrollRight', data);
-  window.electronAPI.ipcRenderer.send('mouseScrollRight', data);
+  ipcRendererSend({
+    channel: IPC_EVENT.mouseScrollRight,
+    data: { requestId: getRandomString(8), data: { amount } },
+  });
 }
 </script>
 
 <style lang="scss" scoped>
-.link {
-  color: $theme-color-gold;
-  cursor: pointer;
-}
-.rtc-config {
-  display: flex;
-  .item {
-    display: flex;
-    align-items: center;
-    padding-right: 10px;
-
-    .down {
-      width: 150px;
-    }
-  }
+.down {
+  width: 150px;
 }
 .list {
   .item {

@@ -2,6 +2,15 @@
 import { computeBox, getRangeRandom } from 'billd-utils';
 import sparkMD5 from 'spark-md5';
 
+import { IIpcRendererData } from '@/interface';
+
+export const ipcRenderer = window.electronAPI.ipcRenderer;
+
+export function ipcRendererSend(data: { channel; data: IIpcRendererData }) {
+  console.log('ipcRendererSend', data.channel, data.data);
+  ipcRenderer.send(data.channel, data.data);
+}
+
 /** 设置约束 */
 export async function handlConstraints(data: {
   frameRate: number;

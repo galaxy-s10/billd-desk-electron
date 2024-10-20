@@ -7,6 +7,7 @@ import { ILiveRoom } from '@/types/ILiveRoom';
 
 export type AppRootState = {
   version: string;
+  lastBuildDate: string;
   workAreaSize: {
     width: number;
     height: number;
@@ -88,6 +89,7 @@ export const useAppStore = defineStore('app', {
   state: (): AppRootState => {
     return {
       version: '',
+      lastBuildDate: '',
       workAreaSize: { width: 0, height: 0 },
       primaryDisplaySize: { width: 0, height: 0 },
       remoteDesk: new Map(),

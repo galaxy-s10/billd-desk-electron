@@ -1,16 +1,12 @@
 <template>
   <div class="layout">
     <div
-      class="top-border"
-      @mousedown="startMove"
-    >
-      <!-- <div
-      class="top-border"
+      class="top-border no-drag"
       @mousedown="startMove"
       @mouseup="endMove"
       @mousemove="moving"
       @mouseleave="endMove"
-    > -->
+    >
       <div
         class="ico close"
         @click="handleClose"
@@ -25,7 +21,7 @@
       </div>
       <div class="ico max"></div>
     </div>
-    <RouterView></RouterView>
+    <div class="container"><RouterView></RouterView></div>
   </div>
 </template>
 
@@ -33,52 +29,53 @@
 import { getRandomString } from 'billd-utils';
 import { reactive, ref } from 'vue';
 
-import { useNetworkStore } from '@/store/network';
+import { IPC_EVENT } from '@/event';
+import { ipcRendererSend } from '@/utils';
 
-const networkStore = useNetworkStore();
+// 窗口当前的位置 + 鼠标当前的相对位置 - 鼠标以前的相对位置
+const isMoving = ref<boolean>(false);
+const lastPoint = reactive({ x: 0, y: 0 });
 
 function handleClose() {
-  networkStore.removeAllWsAndRtc();
+  ipcRendererSend({
+    channel: IPC_EVENT.closeAllChildWindow,
+    data: { requestId: getRandomString(8), data: {} },
+  });
   setTimeout(() => {
-    window.electronAPI.ipcRenderer.send('windowClose', {
-      requestId: getRandomString(8),
+    ipcRendererSend({
+      channel: IPC_EVENT.closeWindow,
+      data: { requestId: getRandomString(8), data: {} },
     });
   }, 300);
 }
 
 function handleMin() {
-  window.electronAPI.ipcRenderer.send('windowMinimize', {
-    requestId: getRandomString(8),
+  ipcRendererSend({
+    channel: IPC_EVENT.windowMinimize,
+    data: { requestId: getRandomString(8), data: {} },
   });
 }
-interface IPoint {
-  x: number;
-  y: number;
-}
-// 窗口当前的位置 + 鼠标当前的相对位置 - 鼠标以前的相对位置
-const isMoving = ref<boolean>(false);
-const lastPoint = reactive<IPoint>({ x: 0, y: 0 });
 
-const startMove = (_ev: MouseEvent) => {
-  console.log('kkkkk');
+const startMove = (e: MouseEvent) => {
   isMoving.value = true;
-  lastPoint.x = _ev.clientX;
-  lastPoint.y = _ev.clientY;
+  lastPoint.x = e.clientX;
+  lastPoint.y = e.clientY;
 };
 
-// const endMove = (_ev: MouseEvent) => {
-//   isMoving.value = false;
-// };
-// const moving = (_ev: MouseEvent) => {
-//   if (isMoving.value) {
-//     // window.api.win.move(_ev.screenX - lastPoint.x, _ev.screenY - lastPoint.y);
-//     window.electronAPI.ipcRenderer.send('setWindowPosition', {
-//       requestId: getRandomString(8),
-//       x: _ev.screenX - lastPoint.x,
-//       y: _ev.screenY - lastPoint.y,
-//     });
-//   }
-// };
+const endMove = () => {
+  isMoving.value = false;
+};
+const moving = (e: MouseEvent) => {
+  if (isMoving.value) {
+    ipcRendererSend({
+      channel: IPC_EVENT.setWindowPosition,
+      data: {
+        requestId: getRandomString(8),
+        data: { x: e.screenX - lastPoint.x, y: e.screenY - lastPoint.y },
+      },
+    });
+  }
+};
 </script>
 
 <style lang="scss" scoped>
@@ -86,11 +83,12 @@ const startMove = (_ev: MouseEvent) => {
   box-sizing: border-box;
   width: 100vw;
   height: 100vh;
+
   .top-border {
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    padding: 2px 8px;
+    padding: 2px 10px;
     width: 100vw;
     height: 40px;
     border-bottom: 1px solid #e8e4e4;
@@ -99,8 +97,12 @@ const startMove = (_ev: MouseEvent) => {
     user-select: none;
     -webkit-user-select: none;
 
-    -webkit-app-region: drag;
-    // -webkit-app-region: no-drag;
+    .drag {
+      -webkit-app-region: drag;
+    }
+    .no-drag {
+      -webkit-app-region: no-drag;
+    }
 
     .ico {
       display: flex;
@@ -126,15 +128,25 @@ const startMove = (_ev: MouseEvent) => {
         background-color: black;
       }
       &.close {
-        background-color: #eb6a5e;
+        background-color: #f7564d;
       }
       &.min {
-        background-color: #f4bf4f;
+        background-color: #f6c84e;
       }
       &.max {
         background-color: #dedede;
         cursor: auto;
       }
+    }
+  }
+  .container {
+    overflow: scroll;
+    box-sizing: border-box;
+    height: calc(100vh - 40px);
+
+    @extend %customScrollbarHide;
+    &:hover {
+      @extend %customScrollbar;
     }
   }
 }

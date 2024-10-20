@@ -1,5 +1,5 @@
 import vue from '@vitejs/plugin-vue';
-import BilldHtmlWebpackPlugin from 'billd-html-webpack-plugin';
+import BilldHtmlWebpackPlugin, { logData } from 'billd-html-webpack-plugin';
 import AutoImport from 'unplugin-auto-import/vite';
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
 import Components from 'unplugin-vue-components/vite';
@@ -87,7 +87,8 @@ export default defineConfig(({ command, mode }) => {
       new BilldHtmlWebpackPlugin({ env: 'vite4' }).config,
     ],
     define: {
-      ['process.env']: {
+      'process.env': {
+        BilldHtmlWebpackPlugin: logData(),
         NODE_ENV: JSON.stringify(isProduction ? 'production' : 'development'),
         PUBLIC_PATH: outputStaticUrl,
         VUE_APP_RELEASE_PROJECT_NAME: JSON.stringify(
