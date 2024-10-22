@@ -1,7 +1,7 @@
 {
   "name": "billd-desk-electron",
   "productName": "BilldDesk",
-  "version": "0.0.118",
+  "version": "0.0.119",
   "description": "billd desk客户端",
   "repository": {
     "type": "git",
