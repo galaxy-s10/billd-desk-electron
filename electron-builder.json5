@@ -6,7 +6,7 @@
   $schema: 'https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json',
   appId: 'com.billddesk.app',
   // asar: false,
-  productName: 'billd-desk',
+  // productName: 'BilldDesk',
   directories: {
     output: 'electron-release/${version}',
   },

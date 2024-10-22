@@ -6,6 +6,7 @@ import type { RouteRecordRaw } from 'vue-router';
 
 export const commonRouterName = {
   qrcodeLogin: 'qrcodeLogin',
+  notFound: 'notFound',
 };
 
 export const mobileRouterName = {
@@ -14,40 +15,18 @@ export const mobileRouterName = {
   h5Area: 'h5Area',
   h5Rank: 'h5Rank',
   h5Profile: 'h5Profile',
-  ...commonRouterName,
 };
 
 export const routerName = {
   home: 'home',
   about: 'about',
-  area: 'area',
-  areaDetail: 'areaDetail',
-  rank: 'rank',
-  sponsors: 'sponsors',
-  privatizationDeployment: 'privatizationDeployment',
-  videoTools: 'videoTools',
-  frameScreenshotByCanvas: 'frameScreenshotByCanvas',
-  frameScreenshotByWebcodec: 'frameScreenshotByWebcodec',
-  support: 'support',
-  order: 'order',
-  wallet: 'wallet',
-  shop: 'shop',
-  link: 'link',
-  ad: 'ad',
-  faq: 'faq',
-  team: 'team',
-  oauth: 'oauth',
-  release: 'release',
-  pushStreamDifferent: 'pushStreamDifferent',
-  notFound: 'notFound',
-  group: 'group',
-  profile: 'profile',
-
+  version: 'version',
   webrtc: 'webrtc',
 
   pull: 'pull',
   push: 'push',
   ...mobileRouterName,
+  ...commonRouterName,
 };
 
 // 默认路由
@@ -68,6 +47,16 @@ export const defaultRoutes: RouteRecordRaw[] = [
     name: routerName.webrtc,
     path: '/webrtc',
     component: () => import('@/views/webrtc/index.vue'),
+  },
+  {
+    name: routerName.about,
+    path: '/about',
+    component: () => import('@/views/about/index.vue'),
+  },
+  {
+    name: routerName.version,
+    path: '/version',
+    component: () => import('@/views/version/index.vue'),
   },
 ];
 

@@ -1,6 +1,7 @@
 <template>
   <div class="layout">
     <div
+      v-if="useCustomBar"
       class="top-border no-drag"
       @mousedown="startMove"
       @mouseup="endMove"
@@ -21,7 +22,12 @@
       </div>
       <div class="ico max"></div>
     </div>
-    <div class="container"><RouterView></RouterView></div>
+    <div
+      class="container"
+      :class="{ mac: !useCustomBar }"
+    >
+      <RouterView></RouterView>
+    </div>
   </div>
 </template>
 
@@ -30,29 +36,31 @@ import { getRandomString } from 'billd-utils';
 import { reactive, ref } from 'vue';
 
 import { IPC_EVENT } from '@/event';
+import { useAppStore } from '@/store/app';
 import { ipcRendererSend } from '@/utils';
+
+const appStore = useAppStore();
 
 // 窗口当前的位置 + 鼠标当前的相对位置 - 鼠标以前的相对位置
 const isMoving = ref<boolean>(false);
 const lastPoint = reactive({ x: 0, y: 0 });
+const useCustomBar = ref(true);
 
 function handleClose() {
   ipcRendererSend({
-    channel: IPC_EVENT.closeAllChildWindow,
-    data: { requestId: getRandomString(8), data: {} },
+    windowId: appStore.windowId,
+    channel: IPC_EVENT.closeAllWindow,
+    requestId: getRandomString(8),
+    data: {},
   });
-  setTimeout(() => {
-    ipcRendererSend({
-      channel: IPC_EVENT.closeWindow,
-      data: { requestId: getRandomString(8), data: {} },
-    });
-  }, 300);
 }
 
 function handleMin() {
   ipcRendererSend({
+    windowId: appStore.windowId,
     channel: IPC_EVENT.windowMinimize,
-    data: { requestId: getRandomString(8), data: {} },
+    requestId: getRandomString(8),
+    data: {},
   });
 }
 
@@ -65,13 +73,16 @@ const startMove = (e: MouseEvent) => {
 const endMove = () => {
   isMoving.value = false;
 };
+
 const moving = (e: MouseEvent) => {
   if (isMoving.value) {
     ipcRendererSend({
+      windowId: appStore.windowId,
       channel: IPC_EVENT.setWindowPosition,
+      requestId: getRandomString(8),
       data: {
-        requestId: getRandomString(8),
-        data: { x: e.screenX - lastPoint.x, y: e.screenY - lastPoint.y },
+        x: e.screenX - lastPoint.x,
+        y: e.screenY - lastPoint.y,
       },
     });
   }
@@ -143,6 +154,10 @@ const moving = (e: MouseEvent) => {
     overflow: scroll;
     box-sizing: border-box;
     height: calc(100vh - 40px);
+
+    &.mac {
+      height: 100vh;
+    }
 
     @extend %customScrollbarHide;
     &:hover {

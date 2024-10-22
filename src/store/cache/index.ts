@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 
-import { lsKeyPrefix } from '@/constant';
-import { AppRootState } from '@/store/app';
+import { LS_KEY_PREFIX } from '@/constant';
 
 export type PiniaCacheRootState = {
   muted: boolean;
@@ -10,12 +9,11 @@ export type PiniaCacheRootState = {
   deskUserPassword: string;
   remoteDeskUserUuid: string;
   remoteDeskUserPassword: string;
-  'resource-list': AppRootState['allTrack'];
 };
 
-export const usePiniaCacheStore = defineStore(`${lsKeyPrefix}pinia-cache`, {
+export const usePiniaCacheStore = defineStore(`${LS_KEY_PREFIX}pinia-cache`, {
   persist: {
-    key: `${lsKeyPrefix}pinia-cache`,
+    key: `${LS_KEY_PREFIX}pinia-cache`,
   },
   state: (): PiniaCacheRootState => {
     return {
@@ -25,18 +23,7 @@ export const usePiniaCacheStore = defineStore(`${lsKeyPrefix}pinia-cache`, {
       deskUserPassword: '',
       remoteDeskUserUuid: '',
       remoteDeskUserPassword: '',
-      'resource-list': [],
     };
   },
-  actions: {
-    setResourceList(res: PiniaCacheRootState['resource-list']) {
-      this['resource-list'] = res;
-    },
-    setMuted(res: PiniaCacheRootState['muted']) {
-      this.muted = res;
-    },
-    setVolume(res: PiniaCacheRootState['volume']) {
-      this.volume = res;
-    },
-  },
+  actions: {},
 });

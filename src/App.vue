@@ -8,9 +8,8 @@
 import { GlobalThemeOverrides, NConfigProvider } from 'naive-ui';
 import { onMounted } from 'vue';
 
+import { APP_BUILD_INFO } from '@/constant';
 import { useAppStore } from '@/store/app';
-
-import { APP_BUILD_INFO } from './constant';
 
 const appStore = useAppStore();
 const themeOverrides: GlobalThemeOverrides = {

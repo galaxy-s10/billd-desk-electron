@@ -6,6 +6,8 @@ import Components from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
 import electron from 'vite-plugin-electron/simple';
+import { createHtmlPlugin } from 'vite-plugin-html';
+
 import pkg from './package.json';
 
 const outputStaticUrl = 'dist';
@@ -39,6 +41,15 @@ export default defineConfig(({ command, mode }) => {
       // legacy(),
       // isProduction && legacy(),
       vue(),
+      createHtmlPlugin({
+        inject: {
+          data: {
+            // @ts-ignore
+            // title: pkg.productName,
+            title: '',
+          },
+        },
+      }),
       electron({
         main: {
           entry: 'electron-main/index.ts', // 主进程文件

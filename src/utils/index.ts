@@ -4,11 +4,14 @@ import sparkMD5 from 'spark-md5';
 
 import { IIpcRendererData } from '@/interface';
 
-export const ipcRenderer = window.electronAPI.ipcRenderer;
+export const ipcRenderer = window.electronAPI?.ipcRenderer;
 
-export function ipcRendererSend(data: { channel; data: IIpcRendererData }) {
+export function ipcRendererSend(data: IIpcRendererData) {
   console.log('ipcRendererSend', data.channel, data.data);
-  ipcRenderer.send(data.channel, data.data);
+  ipcRenderer?.send(data.channel, {
+    requestId: data.requestId,
+    data: { windowId: data.windowId, ...data.data },
+  });
 }
 
 /** 设置约束 */

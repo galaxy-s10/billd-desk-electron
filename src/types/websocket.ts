@@ -131,27 +131,27 @@ export interface IWsFormat<T> {
 }
 
 export type WsChangeMaxBitrateType = IWsFormat<{
-  live_room_id: number;
+  live_room_id: number | string;
   val: number;
 }>;
 
 export type WsChangeMaxFramerateType = IWsFormat<{
-  live_room_id: number;
+  live_room_id: number | string;
   val: number;
 }>;
 
 export type WsChangeResolutionRatioType = IWsFormat<{
-  live_room_id: number;
+  live_room_id: number | string;
   val: number;
 }>;
 
 export type WsChangeVideoContentHintType = IWsFormat<{
-  live_room_id: number;
+  live_room_id: number | string;
   val: string;
 }>;
 
 export type WsChangeAudioContentHintType = IWsFormat<{
-  live_room_id: number;
+  live_room_id: number | string;
   val: string;
 }>;
 
@@ -335,6 +335,8 @@ export enum BilldDeskBehaviorEnum {
   scrollRight,
 
   keyboardType,
+  keyboardPressKey,
+  keyboardReleaseKey,
 }
 
 export type WsBilldDeskStartRemote = IReqWsFormat<{
