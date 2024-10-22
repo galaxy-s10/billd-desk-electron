@@ -1,7 +1,7 @@
 {
   "name": "billd-desk-electron",
   "productName": "BilldDesk",
-  "version": "0.0.117",
+  "version": "0.0.118",
   "description": "billd desk客户端",
   "repository": {
     "type": "git",
@@ -39,6 +39,7 @@
     "socket.io-client": "^4.8.0",
     "spark-md5": "^3.0.2",
     "vconsole": "^3.15.1",
+    "vite-plugin-html": "^3.2.2",
     "vue": "^3.3.4",
     "vue-i18n": "^9",
     "vue-router": "^4.2.4"
