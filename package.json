@@ -1,6 +1,6 @@
 {
   "name": "billd-desk-electron",
-  "version": "0.0.124",
+  "version": "0.0.125",
   "productName": "BilldDesk",
   "description": "billd desk客户端",
   "repository": {
@@ -20,6 +20,7 @@
     "build:win": "standard-version && vite build && electron-builder --win",
     "dev": "vite",
     "preview": "vite preview",
+    "gen-icons": "electron-icon-builder --input=./src/assets/img/billd.jpg --output=build --flatten",
     "release": "standard-version"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "billd-html-webpack-plugin": "^1.0.6",
     "billd-scss": "^0.0.8",
     "billd-utils": "^0.0.22",
+    "electron-icon-builder": "^2.0.1",
     "js-cookie": "^3.0.5",
     "naive-ui": "^2.34.4",
     "pinia": "^2.1.6",
