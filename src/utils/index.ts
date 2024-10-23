@@ -1,4 +1,5 @@
 // TIP: ctrl+cmd+t,生成函数注释
+
 import { computeBox, getRangeRandom } from 'billd-utils';
 import sparkMD5 from 'spark-md5';
 
@@ -6,12 +7,21 @@ import { IIpcRendererData } from '@/interface';
 
 export const ipcRenderer = window.electronAPI?.ipcRenderer;
 
+const ipcRendererOnMap = {};
+
 export function ipcRendererSend(data: IIpcRendererData) {
   console.log('ipcRendererSend', data.channel, data.data);
   ipcRenderer?.send(data.channel, {
     requestId: data.requestId,
     data: { windowId: data.windowId, ...data.data },
   });
+}
+
+export function ipcRendererOn(channel, cb) {
+  if (ipcRendererOnMap[channel]) return;
+  ipcRendererOnMap[channel] = true;
+  console.log('ipcRendererOn', channel);
+  ipcRenderer?.on(channel, cb);
 }
 
 /** 设置约束 */

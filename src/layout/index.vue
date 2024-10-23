@@ -2,49 +2,151 @@
   <div class="layout">
     <div
       v-if="useCustomBar"
-      class="top-border no-drag"
+      class="system-bar no-drag"
       @mousedown="startMove"
       @mouseup="endMove"
       @mousemove="moving"
       @mouseleave="endMove"
     >
-      <div
-        class="ico close"
-        @click="handleClose"
-      >
-        <div class="corss"></div>
+      <div class="top-left">
+        <div class="left">
+          <div
+            class="ico close"
+            @click="handleClose"
+          >
+            <div class="corss"></div>
+          </div>
+          <div
+            class="ico min"
+            @click="handleMin"
+          >
+            <div class="heng"></div>
+          </div>
+          <div class="ico max"></div>
+        </div>
+        <div class="right">v{{ appStore.version }}</div>
       </div>
-      <div
-        class="ico min"
-        @click="handleMin"
-      >
-        <div class="heng"></div>
+      <div class="top-right"></div>
+    </div>
+    <div class="sidebar">
+      <div class="user">
+        <div class="dot"></div>
       </div>
-      <div class="ico max"></div>
+      <div class="list">
+        <div
+          class="item"
+          :class="{ active: route.name === routerName.remote }"
+          @click="router.push({ name: routerName.remote })"
+        >
+          远程控制
+        </div>
+        <div
+          class="item"
+          :class="{ active: route.name === routerName.deviceManage }"
+          @click="router.push({ name: routerName.deviceManage })"
+        >
+          设备列表
+        </div>
+        <div
+          class="item"
+          :class="{ active: route.name === routerName.setting }"
+          @click="router.push({ name: routerName.setting })"
+        >
+          高级设置
+        </div>
+      </div>
     </div>
     <div
-      class="container"
+      class="view"
       :class="{ mac: !useCustomBar }"
     >
       <RouterView></RouterView>
     </div>
+    <UpdateModal
+      v-if="
+        appStore.updateModalInfo &&
+        appStore.updateModalInfo?.checkUpdate === 1 &&
+        appStore.updateModalInfo?.isUpdate === 1
+      "
+      @close="appStore.updateModalInfo.isUpdate = 2"
+    ></UpdateModal>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { getRandomString } from 'billd-utils';
 import { reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import { IPC_EVENT } from '@/event';
+import { IIpcRendererData } from '@/interface';
+import { routerName } from '@/router';
 import { useAppStore } from '@/store/app';
-import { ipcRendererSend } from '@/utils';
+import { ipcRendererOn, ipcRendererSend } from '@/utils';
 
 const appStore = useAppStore();
+const router = useRouter();
+const route = useRoute();
 
 // 窗口当前的位置 + 鼠标当前的相对位置 - 鼠标以前的相对位置
 const isMoving = ref<boolean>(false);
 const lastPoint = reactive({ x: 0, y: 0 });
 const useCustomBar = ref(true);
+
+ipcRendererSend({
+  windowId: 0,
+  channel: IPC_EVENT.getWindowId,
+  requestId: getRandomString(8),
+  data: {},
+});
+
+ipcRendererOn(
+  IPC_EVENT.response_getWindowId,
+  (_event, data: IIpcRendererData) => {
+    console.log('response_getWindowId', data);
+    appStore.windowId = data.data.id;
+  }
+);
+
+ipcRendererOn(
+  IPC_EVENT.response_open_about,
+  (_event, data: IIpcRendererData) => {
+    console.log('response_open_about', data);
+    ipcRendererSend({
+      windowId: 0,
+      channel: IPC_EVENT.createWindow,
+      requestId: getRandomString(8),
+      data: {
+        width: 550,
+        height: 380,
+        route: routerName.about,
+        query: {},
+        useWorkAreaSize: false,
+        frame: true,
+      },
+    });
+  }
+);
+
+ipcRendererOn(
+  IPC_EVENT.response_open_version,
+  (_event, data: IIpcRendererData) => {
+    console.log('response_open_version', data);
+    ipcRendererSend({
+      windowId: 0,
+      channel: IPC_EVENT.createWindow,
+      requestId: getRandomString(8),
+      data: {
+        width: 300,
+        height: 300,
+        route: routerName.version,
+        query: {},
+        useWorkAreaSize: false,
+        frame: true,
+      },
+    });
+  }
+);
 
 function handleClose() {
   ipcRendererSend({
@@ -90,79 +192,133 @@ const moving = (e: MouseEvent) => {
 </script>
 
 <style lang="scss" scoped>
+$sidebar-width: 160px;
 .layout {
+  display: flex;
   box-sizing: border-box;
   width: 100vw;
   height: 100vh;
-
-  .top-border {
+  .system-bar {
+    position: fixed;
+    top: 0;
+    z-index: 999;
     display: flex;
-    align-items: center;
     box-sizing: border-box;
-    padding: 2px 10px;
     width: 100vw;
-    height: 40px;
-    border-bottom: 1px solid #e8e4e4;
-    background-color: #faf2f2;
+    height: $top-system-bar-height;
 
     user-select: none;
-    -webkit-user-select: none;
+    .top-left {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      box-sizing: border-box;
+      padding: 10px 8px 0 12px;
+      width: $sidebar-width;
+      .left {
+        display: flex;
+        align-items: center;
+        .drag {
+          -webkit-app-region: drag;
+        }
+        .no-drag {
+          -webkit-app-region: no-drag;
+        }
 
-    .drag {
-      -webkit-app-region: drag;
-    }
-    .no-drag {
-      -webkit-app-region: no-drag;
-    }
+        .ico {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 8px;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          font-size: 12px;
+          cursor: pointer;
 
-    .ico {
+          -webkit-app-region: no-drag;
+          .corss {
+            width: 7px;
+            height: 7px;
+
+            @include cross(black, 1px);
+          }
+          .heng {
+            width: 7px;
+            height: 1px;
+            background-color: black;
+          }
+          &.close {
+            background-color: #f7564d;
+          }
+          &.min {
+            background-color: #f6c84e;
+          }
+          &.max {
+            background-color: #dedede;
+            cursor: auto;
+          }
+        }
+      }
+      .right {
+        display: flex;
+        align-items: center;
+        color: #666;
+        font-size: 12px;
+      }
+    }
+    .top-right {
       display: flex;
       align-items: center;
-      justify-content: center;
-      margin-right: 10px;
-      width: 20px;
-      height: 20px;
+      width: calc(100vw - $sidebar-width);
+    }
+  }
+  .sidebar {
+    box-sizing: border-box;
+    padding: 60px 10px 0;
+    width: $sidebar-width;
+    height: 100vh;
+    background-color: #f0f3f8;
+    .user {
+      position: relative;
+      margin: 0 auto;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
-      font-size: 12px;
-      cursor: pointer;
 
-      -webkit-app-region: no-drag;
-      .corss {
-        width: 8px;
-        height: 8px;
-
-        @include cross(black, 1px);
+      @include setBackground('@/assets/img/billd.jpg');
+      .dot {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background-color: #6cdd5b;
       }
-      .heng {
-        width: 7px;
-        height: 1px;
-        background-color: black;
-      }
-      &.close {
-        background-color: #f7564d;
-      }
-      &.min {
-        background-color: #f6c84e;
-      }
-      &.max {
-        background-color: #dedede;
-        cursor: auto;
+    }
+    .list {
+      padding-top: 20px;
+      .item {
+        margin-bottom: 5px;
+        padding: 0 10px;
+        height: 30px;
+        border-radius: 4px;
+        color: #666;
+        font-size: 14px;
+        line-height: 30px;
+        cursor: pointer;
+        &.active,
+        &:hover {
+          background-color: #ccdff8;
+          color: #3172f6;
+        }
       }
     }
   }
-  .container {
-    overflow: scroll;
+  .view {
     box-sizing: border-box;
-    height: calc(100vh - 40px);
-
-    &.mac {
-      height: 100vh;
-    }
-
-    @extend %customScrollbarHide;
-    &:hover {
-      @extend %customScrollbar;
-    }
+    width: calc(100vw - $sidebar-width);
   }
 }
 </style>

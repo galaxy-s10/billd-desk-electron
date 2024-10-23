@@ -12,6 +12,10 @@ export const AUTHOR_INFO = {
   qq: '2274751790',
 };
 
+export const COMMON_URL = {
+  privatizationDeployment: 'https://live.hsslive.cn/privatizationDeployment',
+};
+
 // @ts-ignore
 export const APP_BUILD_INFO = process.env
   .BilldHtmlWebpackPlugin as BilldHtmlWebpackPluginLog;
@@ -50,6 +54,8 @@ export const COOKIE_DOMAIN =
   process.env.NODE_ENV === 'development' ? undefined : `.${prodDomain}`;
 
 export const THEME_COLOR = '#ffd700';
+
+export const PRODUCT_NAME = 'BilldDesk';
 
 export const NUT_KEY_MAP = {
   A: Key.A,

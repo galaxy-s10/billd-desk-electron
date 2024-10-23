@@ -1,12 +1,42 @@
 import { UploadFileInfo } from 'naive-ui';
 import { defineStore } from 'pinia';
 
-import { LiveLineEnum, LiveRenderEnum, MediaTypeEnum } from '@/interface';
+import {
+  IDeskVersion,
+  LiveLineEnum,
+  LiveRenderEnum,
+  MediaTypeEnum,
+} from '@/interface';
 import { mobileRouterName } from '@/router';
 import { ILiveRoom } from '@/types/ILiveRoom';
 
 export type AppRootState = {
   version: string;
+  updateModalInfo?: {
+    version: string;
+    show_version: string;
+    isUpdate: number;
+    forceUpdate: number;
+    checkUpdate: number;
+    updateContent: string;
+    updateDate: string;
+    download: {
+      macos_dmg: string;
+      window_64_exe: string;
+      window_32_exe: string;
+      window_arm_exe: string;
+      linux_64_deb: string;
+      linux_64_tar: string;
+      linux_arm_deb: string;
+      linux_arm_tar: string;
+    };
+    disableList: {
+      version: string;
+      msg: string;
+    }[];
+    remark: string;
+  };
+  deskVersionInfo?: IDeskVersion;
   lastBuildDate: string;
   scaleFactor: number;
   windowId: number;
@@ -91,6 +121,8 @@ export const useAppStore = defineStore('app', {
   state: (): AppRootState => {
     return {
       version: '',
+      updateModalInfo: undefined,
+      deskVersionInfo: undefined,
       lastBuildDate: '',
       scaleFactor: 1,
       windowId: -1,

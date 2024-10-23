@@ -363,7 +363,7 @@ import {
   WsConnectStatusEnum,
   WsMsgTypeEnum,
 } from '@/types/websocket';
-import { ipcRendererSend, videoFullBox } from '@/utils';
+import { ipcRendererOn, ipcRendererSend, videoFullBox } from '@/utils';
 
 const route = useRoute();
 const appStore = useAppStore();
@@ -434,8 +434,6 @@ const rtcLoss = computed(() => {
 const loopGetSettingsTimer = ref();
 const loopReconnectTimer = ref();
 const videoSettings = ref<MediaTrackSettings>();
-
-const ipcRenderer = window.electronAPI?.ipcRenderer;
 
 onMounted(() => {
   console.log('webrtc页面');
@@ -510,7 +508,7 @@ onUnmounted(() => {
   handleClose();
 });
 
-ipcRenderer?.on(
+ipcRendererOn(
   IPC_EVENT.response_getWindowId,
   (_event, data: IIpcRendererData) => {
     console.log('response_getWindowId', data);

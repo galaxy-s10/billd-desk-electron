@@ -18,10 +18,13 @@ export const mobileRouterName = {
 };
 
 export const routerName = {
+  remote: 'remote',
   home: 'home',
   about: 'about',
   version: 'version',
   webrtc: 'webrtc',
+  deviceManage: 'deviceManage',
+  setting: 'setting',
 
   pull: 'pull',
   push: 'push',
@@ -35,11 +38,22 @@ export const defaultRoutes: RouteRecordRaw[] = [
     name: routerName.home,
     path: '/',
     component: Layout,
+    redirect: routerName.remote,
     children: [
       {
-        name: routerName.home,
-        path: '/',
-        component: () => import('@/views/home/index.vue'),
+        name: routerName.remote,
+        path: '/remote',
+        component: () => import('@/views/remote/index.vue'),
+      },
+      {
+        name: routerName.deviceManage,
+        path: '/deviceManage',
+        component: () => import('@/views/deviceManage/index.vue'),
+      },
+      {
+        name: routerName.setting,
+        path: '/setting',
+        component: () => import('@/views/setting/index.vue'),
       },
     ],
   },

@@ -1,6 +1,6 @@
 <template>
   <NNotificationProvider>
-    <NMessageProvider :max="5">
+    <NMessageProvider :max="2">
       <ContentCpt></ContentCpt>
     </NMessageProvider>
   </NNotificationProvider>

@@ -1,7 +1,7 @@
 <template>
   <div class="about-wrap">
     <div class="item logo"></div>
-    <div class="item name">BilldDesk</div>
+    <div class="item name">{{ PRODUCT_NAME }}</div>
     <div class="item version">v{{ appStore.version }}</div>
     <div class="copyright">
       Copyright © 2023-2024
@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import { AUTHOR_INFO } from '@/constant';
+import { AUTHOR_INFO, PRODUCT_NAME } from '@/constant';
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { useAppStore } from '@/store/app';
 

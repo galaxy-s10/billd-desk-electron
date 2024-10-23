@@ -88,6 +88,7 @@ async function createWindow({
     autoHideMenuBar: true,
     x: xx,
     y: yy,
+    icon: path.join(__dirname, '../public/favicon.ico'),
     webPreferences: {
       devTools: true,
       // nodeIntegration: true, // 在网页中集成Node
