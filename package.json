@@ -1,7 +1,6 @@
 {
   "name": "billd-desk-electron",
-  "version": "0.0.126",
-  "productName": "BilldDesk",
+  "version": "0.0.127",
   "description": "billd desk客户端",
   "repository": {
     "type": "git",
@@ -19,8 +18,8 @@
     "build:mw": "standard-version && vite build && electron-builder --mac --win",
     "build:win": "standard-version && vite build && electron-builder --win",
     "dev": "vite",
-    "preview": "vite preview",
     "gen-icons": "electron-icon-builder --input=./src/assets/img/billd.jpg --output=build --flatten",
+    "preview": "vite preview",
     "release": "standard-version"
   },
   "dependencies": {
@@ -77,5 +76,6 @@
     "vite-plugin-electron-renderer": "^0.14.5",
     "vite-plugin-eslint": "^1.8.1",
     "vue-tsc": "^1.8.8"
-  }
+  },
+  "productName": "BilldDesk"
 }
