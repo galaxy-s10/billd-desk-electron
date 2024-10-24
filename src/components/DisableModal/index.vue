@@ -1,51 +1,53 @@
 <template>
-  <div class="update-modal-wrap">
+  <div class="disable-modal-wrap">
     <div class="mask"></div>
     <div class="content">
       <div class="top">
-        <div class="title">版本更新</div>
-        <div
-          v-if="appStore.updateModalInfo?.forceUpdate !== 1"
-          class="close"
-          @click="emits('close')"
-        ></div>
+        <div class="title">提示</div>
+        <div></div>
       </div>
       <div
         class="update-content"
-        v-html="appStore.updateModalInfo?.updateContent"
+        v-html="
+          appStore.updateModalInfo?.disableList.find(
+            (v) => v.version === appStore.version
+          )?.msg
+        "
       ></div>
       <div class="other">
-        <div>版本号：{{ appStore.updateModalInfo?.show_version }}</div>
-        <div>更新时间：{{ appStore.updateModalInfo?.updateDate }}</div>
+        <div>发布时间：{{ appStore.updateModalInfo?.updateDate }}</div>
       </div>
       <div
         class="btn"
-        @click="
-          handleOpenExternal({
-            windowId: appStore.windowId,
-            url: appStore.updateModalInfo?.download.macos_dmg,
-          })
-        "
+        @click="handleClose"
       >
-        立即更新
+        确定
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
+import { getRandomString } from 'billd-utils';
+
+import { IPC_EVENT } from '@/event';
 import { useAppStore } from '@/store/app';
+import { ipcRendererSend } from '@/utils';
 
 const appStore = useAppStore();
 
-const { handleOpenExternal } = useIpcRendererSend();
-
-const emits = defineEmits(['confirm', 'close']);
+function handleClose() {
+  ipcRendererSend({
+    windowId: appStore.windowId,
+    channel: IPC_EVENT.closeAllWindow,
+    requestId: getRandomString(8),
+    data: {},
+  });
+}
 </script>
 
 <style lang="scss" scoped>
-.update-modal-wrap {
+.disable-modal-wrap {
   .mask {
     background-color: rgba($color: #000000, $alpha: 0.3) !important;
 
@@ -55,7 +57,7 @@ const emits = defineEmits(['confirm', 'close']);
     position: fixed;
     top: 50%;
     left: 50%;
-    z-index: 99;
+    z-index: 100;
     box-sizing: border-box;
     padding: 15px 20px;
     width: 320px;
@@ -71,13 +73,6 @@ const emits = defineEmits(['confirm', 'close']);
       .title {
         font-weight: 500;
         font-size: 16px;
-      }
-      .close {
-        width: 14px;
-        height: 14px;
-        cursor: pointer;
-
-        @include cross(#666, 2px);
       }
     }
     .update-content {

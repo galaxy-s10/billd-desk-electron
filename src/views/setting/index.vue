@@ -273,6 +273,11 @@ async function handleDeskVersionCheck() {
   const res = await fetchDeskVersionCheck(appStore.version);
   if (res.code === 200 && res.data) {
     appStore.updateModalInfo = res.data;
+    if (appStore.updateModalInfo?.checkUpdate === 2) {
+      window.$message.success('当前不需要更新');
+    } else if (appStore.updateModalInfo?.isUpdate === 2) {
+      window.$message.success('当前是最新版本');
+    }
   }
 }
 </script>

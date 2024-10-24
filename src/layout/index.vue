@@ -70,6 +70,14 @@
       "
       @close="appStore.updateModalInfo.isUpdate = 2"
     ></UpdateModal>
+    <DisableModal
+      v-if="
+        appStore.updateModalInfo &&
+        appStore.updateModalInfo?.disableList.find(
+          (v) => v.version === appStore.version
+        )
+      "
+    ></DisableModal>
   </div>
 </template>
 

@@ -53,6 +53,7 @@
           </div>
           <div
             class="btn"
+            :class="{ gray: !cacheStore.remoteDeskUserUuid.length }"
             @click="startRemote"
           >
             连接
@@ -150,8 +151,8 @@
           class="link"
           @click="windowReload"
         >
-          刷新页面</span
-        >
+          刷新页面
+        </span>
         <span>，</span>
         <span
           class="link"
@@ -404,7 +405,6 @@ watch(
     if (newval) {
       appStore.remoteDesk.forEach((item) => {
         if (!item.isClose) {
-          console.log('handleRTChandleRTC');
           handleRTC(item.sender);
         }
       });
@@ -780,13 +780,13 @@ async function handleConfirm(pwd: string) {
 
 async function startRemote() {
   if (cacheStore.remoteDeskUserUuid === '') {
-    window.$message.warning('请输入被控uuid！');
+    window.$message.warning('请输入远程设备代码！');
     return;
   }
-  // if (cacheStore.remoteDeskUserUuid === cacheStore.deskUserUuid) {
-  //   window.$message.warning('不能连接自己！');
-  //   return;
-  // }
+  if (cacheStore.remoteDeskUserUuid === cacheStore.deskUserUuid) {
+    window.$message.warning('不能连接自己！');
+    return;
+  }
   const res = await fetchFindReceiverByUuid(cacheStore.remoteDeskUserUuid);
   if (res.code === 200) {
     if (res.data.receiver !== '') {
@@ -941,7 +941,11 @@ function handleDel(sender) {
           line-height: 40px;
           cursor: pointer;
           &:hover {
-            opacity: 0.7;
+            opacity: 0.8;
+          }
+          &.gray {
+            opacity: 0.5;
+            cursor: no-drop;
           }
         }
       }
