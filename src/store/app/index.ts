@@ -11,6 +11,7 @@ import { mobileRouterName } from '@/router';
 import { ILiveRoom } from '@/types/ILiveRoom';
 
 export type AppRootState = {
+  showDebug: boolean;
   version: string;
   updateModalInfo?: {
     version: string;
@@ -120,6 +121,7 @@ export type AppRootState = {
 export const useAppStore = defineStore('app', {
   state: (): AppRootState => {
     return {
+      showDebug: false,
       version: '',
       updateModalInfo: undefined,
       deskVersionInfo: undefined,

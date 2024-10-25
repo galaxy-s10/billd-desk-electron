@@ -42,21 +42,66 @@
       <div class="remote-device">
         <div class="label">远程控制设备</div>
         <div class="info">
-          <div class="ipt-wrap">
-            <input
-              type="text"
-              class="ipt"
-              v-model="cacheStore.remoteDeskUserUuid"
-              :placeholder="'请输入远程设备代码'"
-              maxlength="8"
-            />
+          <div
+            class="ipt-wrap"
+            v-on-click-outside="handleClickOutside"
+          >
+            <div
+              class="ipt-top"
+              :ref="arrowDownRef"
+            >
+              <input
+                type="text"
+                class="ipt"
+                v-model="cacheStore.remoteDeskUserUuid"
+                :placeholder="'请输入远程设备代码'"
+                maxlength="8"
+              />
+              <div
+                class="arrow-down"
+                :class="{ active: showLinkDeviceList }"
+                @click="showLinkDeviceList = !showLinkDeviceList"
+              ></div>
+            </div>
+            <div class="ipt-bottom">
+              <div
+                class="link-device-list"
+                v-if="showLinkDeviceList"
+                ref="linkDeviceListRef"
+              >
+                <div
+                  class="link-device-item"
+                  v-for="(item, index) in cacheStore.linkDeviceList"
+                  :key="index"
+                  @click="changeRemoteDeskUserUuid(item)"
+                >
+                  <div class="left">{{ item.remoteDeskUserUuid }}</div>
+                  <div class="right">
+                    <div
+                      class="del"
+                      @click="handleDelLinkDeviceList(item)"
+                    ></div>
+                  </div>
+                </div>
+                <div
+                  class="null"
+                  v-if="!cacheStore.linkDeviceList.length"
+                >
+                  暂无记录
+                </div>
+              </div>
+            </div>
           </div>
           <div
             class="btn"
-            :class="{ gray: !cacheStore.remoteDeskUserUuid.length }"
+            :class="{ gray: !cacheStore.remoteDeskUserUuid.length, loading }"
             @click="startRemote"
           >
-            连接
+            <div v-if="!loading">连接</div>
+            <div
+              v-else
+              class="loading"
+            ></div>
           </div>
         </div>
       </div>
@@ -69,51 +114,76 @@
       </div>
 
       <div class="link-config">
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>码率</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentMaxBitrate"
-              :options="maxBitrate"
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>帧率</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentMaxFramerate"
-              :options="maxFramerate"
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>分辨率</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentResolutionRatio"
-              :options="resolutionRatio"
-            />
-          </n-input-group>
-        </n-space>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>视频内容</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentVideoContentHint"
-              :options="videoContentHint"
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>音频内容</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentAudioContentHint"
-              :options="audioContentHint"
-            />
-          </n-input-group>
-        </n-space>
+        <div class="link-item">
+          <n-space>
+            <div class="link-label">码率：</div>
+            <n-radio-group v-model:value="currentMaxBitrate">
+              <n-radio
+                v-for="item in maxBitrate"
+                :key="item.value"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </n-radio>
+            </n-radio-group>
+          </n-space>
+        </div>
+        <div class="link-item">
+          <n-space>
+            <div class="link-label">帧率：</div>
+            <n-radio-group v-model:value="currentMaxFramerate">
+              <n-radio
+                v-for="item in maxFramerate"
+                :key="item.value"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </n-radio>
+            </n-radio-group>
+          </n-space>
+        </div>
+        <div class="link-item">
+          <n-space>
+            <div class="link-label">分辨率：</div>
+            <n-radio-group v-model:value="currentResolutionRatio">
+              <n-radio
+                v-for="item in resolutionRatio"
+                :key="item.value"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </n-radio>
+            </n-radio-group>
+          </n-space>
+        </div>
+        <div class="link-item">
+          <n-space>
+            <div class="link-label">视频内容：</div>
+            <n-radio-group v-model:value="currentVideoContentHint">
+              <n-radio
+                v-for="item in videoContentHint"
+                :key="item.value"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </n-radio>
+            </n-radio-group>
+          </n-space>
+        </div>
+        <div class="link-item">
+          <n-space>
+            <div class="link-label">音频内容：</div>
+            <n-radio-group v-model:value="currentAudioContentHint">
+              <n-radio
+                v-for="item in audioContentHint"
+                :key="item.value"
+                :value="item.value"
+              >
+                {{ item.label }}
+              </n-radio>
+            </n-radio-group>
+          </n-space>
+        </div>
       </div>
 
       <div v-if="appStore.remoteDesk.size">
@@ -144,23 +214,8 @@
 
     <div
       class="debug-info"
-      v-if="showDebug"
+      v-if="appStore.showDebug"
     >
-      <div>
-        <span
-          class="link"
-          @click="windowReload"
-        >
-          刷新页面
-        </span>
-        <span>，</span>
-        <span
-          class="link"
-          @click="handleOpenDevTools({ windowId: appStore.windowId })"
-        >
-          打开调试
-        </span>
-      </div>
       <div>
         <span>窗口Id：</span>
         <span
@@ -168,6 +223,14 @@
           @click="handleCopy(appStore.windowId)"
         >
           {{ appStore.windowId }}
+        </span>
+        <span>，</span>
+        <span>roomId：</span>
+        <span
+          class="link"
+          @click="handleCopy(roomId)"
+        >
+          {{ roomId }}
         </span>
       </div>
       <div>
@@ -177,14 +240,6 @@
           @click="handleCopy(mySocketId)"
         >
           {{ mySocketId }}
-        </span>
-        <span>，</span>
-        <span>roomId：</span>
-        <span
-          class="link"
-          @click="handleCopy(roomId)"
-        >
-          {{ roomId }}
         </span>
       </div>
 
@@ -200,8 +255,10 @@
 
     <PwdModalCpt
       v-if="showPwdModalCpt"
+      :uuid="cacheStore.remoteDeskUserUuid"
+      :pwd="pwd"
       :err-msg="errMsg"
-      @close="showPwdModalCpt = false"
+      @close="handleClose"
       @confirm="handleConfirm"
     ></PwdModalCpt>
 
@@ -210,6 +267,7 @@
 </template>
 
 <script lang="ts" setup>
+import { vOnClickOutside } from '@vueuse/components';
 import { copyToClipBoard, getRandomString, windowReload } from 'billd-utils';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -221,6 +279,7 @@ import {
   fetchDeskUserUpdateByUuid,
   fetchFindReceiverByUuid,
 } from '@/api/deskUser';
+import { WINDOW_ID_ENUM } from '@/constant';
 import { IPC_EVENT } from '@/event';
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { useRTCParams } from '@/hooks/use-rtcParams';
@@ -275,7 +334,6 @@ const {
   handleMoveScreenRightBottom,
   handleScreen,
   handleRtcBilldDeskBehavior,
-  handleOpenDevTools,
 } = useIpcRendererSend();
 
 const inviteInfoCptRef = ref<InstanceType<typeof InviteInfoCpt>>();
@@ -290,10 +348,14 @@ const receiverId = ref('');
 const anchorStream = ref<MediaStream>();
 /** 是否控制别人 */
 const isControlOther = ref(false);
+const loading = ref(false);
 const showPwdModalCpt = ref(false);
+const showLinkDeviceList = ref(false);
+const arrowDownRef = ref();
+const linkDeviceListRef = ref();
+const pwd = ref('');
 const errMsg = ref('');
 const chromeMediaSourceId = ref();
-const showDebug = ref(false);
 const originalPassword = ref('');
 const loopBilldDeskUpdateUserTimer = ref();
 const suspend = ref('');
@@ -314,13 +376,16 @@ onMounted(() => {
   console.log('home页面');
   console.log('route.query', route.query);
   handleInit();
-  ipcRendererSend({
-    windowId: 0,
-    channel: IPC_EVENT.getWindowId,
-    requestId: getRandomString(8),
-    data: {},
-  });
 });
+
+const handleClickOutside: any = [
+  () => {
+    if (showLinkDeviceList.value) {
+      showLinkDeviceList.value = false;
+    }
+  },
+  { ignore: [arrowDownRef] },
+];
 
 watch(
   () => appStore.windowId,
@@ -425,6 +490,9 @@ watch(
     } else {
       handleCloseAll();
     }
+  },
+  {
+    immediate: true,
   }
 );
 
@@ -509,71 +577,70 @@ function handleInitIpcRendererSend() {
   });
 }
 
+function responseScaleFactor(_event, data: IIpcRendererData) {
+  if (data.data.platform !== 'darwin') {
+    appStore.scaleFactor = data.data.scaleFactor;
+  }
+}
+function responsePowerMonitorSuspend(_event, data: IIpcRendererData) {
+  console.log('response_powerMonitorSuspend', data);
+  suspend.value = `${new Date().toLocaleString()}-powerMonitorSuspend`;
+}
+function responsePowerMonitorResume(_event, data: IIpcRendererData) {
+  console.log('response_powerMonitorResume', data);
+  resume.value = `${new Date().toLocaleString()}-powerMonitorResume`;
+  handleCloseAll();
+}
+function responseGetWindowPosition(_event, data: IIpcRendererData) {
+  position.value = data.data.position;
+}
+function responseWorkAreaSize(_event, data: IIpcRendererData) {
+  appStore.workAreaSize = {
+    width: data.data.width,
+    height: data.data.height,
+  };
+}
+function responseGetPrimaryDisplaySize(_event, data: IIpcRendererData) {
+  appStore.workAreaSize = {
+    width: data.data.width,
+    height: data.data.height,
+  };
+}
+function responseGetScreenStream(_event, data: IIpcRendererData) {
+  if (data.code !== 0) {
+    window.$message.error(data.msg || '');
+    return;
+  }
+  chromeMediaSourceId.value = data.data.stream.id;
+  handleDesktopStream(data.data.stream.id);
+}
+
 function handleInitIpcRendererOn() {
-  ipcRendererOn(
-    IPC_EVENT.response_scaleFactor,
-    (_event, data: IIpcRendererData) => {
-      if (data.data.platform !== 'darwin') {
-        appStore.scaleFactor = data.data.scaleFactor;
-      }
-    }
-  );
+  ipcRendererOn(IPC_EVENT.response_scaleFactor, responseScaleFactor);
 
   ipcRendererOn(
     IPC_EVENT.response_powerMonitorSuspend,
-    (_event, data: IIpcRendererData) => {
-      console.log('response_powerMonitorSuspend', data);
-      suspend.value = `${new Date().toLocaleString()}-powerMonitorSuspend`;
-    }
+    responsePowerMonitorSuspend
   );
 
   ipcRendererOn(
     IPC_EVENT.response_powerMonitorResume,
-    (_event, data: IIpcRendererData) => {
-      console.log('response_powerMonitorResume', data);
-      resume.value = `${new Date().toLocaleString()}-powerMonitorResume`;
-      handleCloseAll();
-    }
+    responsePowerMonitorResume
   );
 
   ipcRendererOn(
     IPC_EVENT.response_getWindowPosition,
-    (_event, data: IIpcRendererData) => {
-      position.value = data.data.position;
-    }
+    responseGetWindowPosition
   );
 
-  ipcRendererOn(
-    IPC_EVENT.response_workAreaSize,
-    (_event, data: IIpcRendererData) => {
-      appStore.workAreaSize = {
-        width: data.data.width,
-        height: data.data.height,
-      };
-    }
-  );
+  ipcRendererOn(IPC_EVENT.response_workAreaSize, responseWorkAreaSize);
 
   ipcRendererOn(
     IPC_EVENT.response_getPrimaryDisplaySize,
-    (_event, data: IIpcRendererData) => {
-      appStore.primaryDisplaySize = {
-        width: data.data.width,
-        height: data.data.height,
-      };
-    }
+    responseGetPrimaryDisplaySize
   );
 
-  ipcRendererOn(
-    IPC_EVENT.response_getScreenStream,
-    (_event, data: IIpcRendererData) => {
-      if (data.code !== 0) {
-        window.$message.error(data.msg || '');
-        return;
-      }
-      chromeMediaSourceId.value = data.data.stream.id;
-      handleDesktopStream(data.data.stream.id);
-    }
-  );
+  ipcRendererOn(IPC_EVENT.response_getScreenStream, responseGetScreenStream);
 }
 
 async function initDeskUser() {
@@ -737,45 +804,93 @@ function handleCopy(str) {
   window.$message.success('复制成功！');
 }
 
+function handleClose() {
+  showPwdModalCpt.value = false;
+  loading.value = false;
+}
+
 async function handleConfirm(pwd: string) {
   errMsg.value = '';
-  const res = await fetchDeskUserLinkVerify({
-    uuid: cacheStore.remoteDeskUserUuid,
-    password: pwd,
-  });
-  if (res.code == 200) {
-    if (res.data.code === 1) {
-      isControlOther.value = true;
-      showPwdModalCpt.value = false;
-      ipcRendererSend({
-        windowId: 0,
-        channel: IPC_EVENT.createWindow,
-        requestId: getRandomString(8),
-        data: {
-          route: routerName.webrtc,
-          query: {
-            roomId: cacheStore.remoteDeskUserUuid,
-            deskUserUuid: cacheStore.deskUserUuid,
-            deskUserPassword: cacheStore.deskUserPassword,
+  try {
+    const res = await fetchDeskUserLinkVerify({
+      uuid: cacheStore.remoteDeskUserUuid,
+      password: pwd,
+    });
+    if (res.code == 200) {
+      if (res.data.code === 1) {
+        isControlOther.value = true;
+        showPwdModalCpt.value = false;
+        cacheStore.linkDeviceList = cacheStore.linkDeviceList.filter(
+          (v) => v.remoteDeskUserUuid !== cacheStore.remoteDeskUserUuid
+        );
+        cacheStore.linkDeviceList.push({
+          remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
+          remoteDeskUserPassword: pwd,
+        });
+        setTimeout(() => {
+          loading.value = false;
+        }, 300);
+        ipcRendererSend({
+          windowId: 0,
+          channel: IPC_EVENT.createWindow,
+          requestId: getRandomString(8),
+          data: {
+            route: routerName.webrtc,
+            query: {
+              roomId: cacheStore.remoteDeskUserUuid,
+              deskUserUuid: cacheStore.deskUserUuid,
+              deskUserPassword: cacheStore.deskUserPassword,
+              remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
+              remoteDeskUserPassword: pwd,
+              receiverId: receiverId.value,
+              maxBitrate: currentMaxBitrate.value,
+              maxFramerate: currentMaxFramerate.value,
+              resolutionRatio: currentResolutionRatio.value,
+              audioContentHint: currentAudioContentHint.value,
+              videoContentHint: currentVideoContentHint.value,
+            },
+            windowId: WINDOW_ID_ENUM.webrtc,
+            minWidth: 300,
+            minHeight: 300,
+            useWorkAreaSize: true,
+            frame: true,
+          },
+        });
+        const flag = cacheStore.linkDeviceList.find(
+          (v) => v.remoteDeskUserUuid === cacheStore.remoteDeskUserUuid
+        );
+        if (!flag) {
+          cacheStore.linkDeviceList.push({
             remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
             remoteDeskUserPassword: pwd,
-            receiverId: receiverId.value,
-            maxBitrate: currentMaxBitrate.value,
-            maxFramerate: currentMaxFramerate.value,
-            resolutionRatio: currentResolutionRatio.value,
-            audioContentHint: currentAudioContentHint.value,
-            videoContentHint: currentVideoContentHint.value,
-          },
-          useWorkAreaSize: true,
-          frame: true,
-        },
-      });
+          });
+        }
+      } else {
+        showPwdModalCpt.value = true;
+        errMsg.value = '密码错误，请重新输入';
+      }
     } else {
-      errMsg.value = '密码错误，请重新输入';
+      window.$message.error(res.message);
     }
-  } else {
-    window.$message.error(res.message);
+  } catch (error) {
+    console.log(error);
   }
+}
+
+function changeRemoteDeskUserUuid(item) {
+  const res = cacheStore.linkDeviceList.find(
+    (v) => v.remoteDeskUserUuid === item.remoteDeskUserUuid
+  );
+  if (res) {
+    cacheStore.remoteDeskUserUuid = res.remoteDeskUserUuid;
+    cacheStore.remoteDeskUserPassword = res.remoteDeskUserPassword;
+  }
+}
+
+function handleDelLinkDeviceList(item) {
+  cacheStore.linkDeviceList = cacheStore.linkDeviceList.filter(
+    (v) => v.remoteDeskUserUuid !== item.remoteDeskUserUuid
+  );
 }
 
 async function startRemote() {
@@ -787,15 +902,38 @@ async function startRemote() {
     window.$message.warning('不能连接自己！');
     return;
   }
-  const res = await fetchFindReceiverByUuid(cacheStore.remoteDeskUserUuid);
-  if (res.code === 200) {
-    if (res.data.receiver !== '') {
-      showPwdModalCpt.value = true;
+  try {
+    loading.value = true;
+    const res = await fetchFindReceiverByUuid(cacheStore.remoteDeskUserUuid);
+    if (res.code === 200) {
+      if (res.data.receiver !== '') {
+        const old = cacheStore.linkDeviceList.find(
+          (v) => v.remoteDeskUserUuid === cacheStore.remoteDeskUserUuid
+        );
+        if (old) {
+          pwd.value = old.remoteDeskUserPassword;
+          handleConfirm(pwd.value);
+        } else {
+          pwd.value = '';
+          showPwdModalCpt.value = true;
+        }
+      } else {
+        window.$message.info('该设备不在线');
+        setTimeout(() => {
+          loading.value = false;
+        }, 300);
+      }
     } else {
-      window.$message.info('该设备不在线');
+      setTimeout(() => {
+        loading.value = false;
+      }, 300);
+      window.$message.error(res.message);
     }
-  } else {
-    window.$message.error(res.message);
+  } catch (error) {
+    setTimeout(() => {
+      loading.value = false;
+    }, 300);
+    console.log(error);
   }
 }
 
@@ -898,6 +1036,8 @@ function handleDel(sender) {
       }
     }
     .remote-device {
+      position: relative;
+      z-index: 10;
       padding-top: 20px;
       .label {
         font-weight: 500;
@@ -908,37 +1048,105 @@ function handleDel(sender) {
         justify-content: space-between;
         margin-top: 5px;
         .ipt-wrap {
-          width: 100%;
-          .ipt {
-            box-sizing: border-box;
-            padding: 0 15px;
-            width: 100%;
-            height: 40px;
-            outline: none;
-            border: 1px solid rgba(153, 153, 153, 0.2);
-            border-radius: 4px;
-            color: #666;
-            font-size: 16px;
-            &::placeholder {
-              color: #c2c2c2;
-              font-size: 15px;
+          flex: 1;
+          .ipt-top {
+            position: relative;
+            .ipt {
+              box-sizing: border-box;
+              padding: 0 15px;
+              width: 100%;
+              height: 40px;
+              outline: none;
+              border: 1px solid rgba(153, 153, 153, 0.2);
+              border-radius: 4px;
+              color: #666;
+              font-size: 16px;
+              &::placeholder {
+                color: #c2c2c2;
+                font-size: 15px;
+              }
+              &:focus {
+                border: 1px solid $theme-color-gold;
+              }
             }
-            &:focus {
-              border: 1px solid $theme-color-gold;
+            .arrow-down {
+              position: absolute;
+              top: 50%;
+              right: 1px;
+              width: 24px;
+              height: 24px;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              transform: translate(-50%, -50%);
+
+              @include setBackground('@/assets/img/arrow_down.png');
+              &.active {
+                transform: translate(-50%, -50%) rotate(180deg);
+              }
+            }
+          }
+          .ipt-bottom {
+            position: relative;
+
+            .link-device-list {
+              position: absolute;
+              top: 0;
+              left: 0;
+              overflow: scroll;
+              box-sizing: border-box;
+              max-height: 200px;
+              width: 100%;
+              border: 1px solid rgba(153, 153, 153, 0.2);
+              border-radius: 2px;
+              background-color: #fff;
+
+              @extend %hideScrollbar;
+              .link-device-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-sizing: border-box;
+                padding: 0 15px;
+                width: 100%;
+                height: 40px;
+                &:hover {
+                  background-color: #f8f8fb;
+                }
+                .left {
+                  font-size: 16px;
+                }
+                .right {
+                  .del {
+                    width: 15px;
+                    height: 15px;
+                    cursor: pointer;
+
+                    @include cross(#666, 1px);
+                  }
+                }
+              }
+            }
+            .null {
+              height: 40px;
+              color: #999;
+              text-align: center;
+              font-size: 16px;
+              line-height: 40px;
             }
           }
         }
 
         .btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           margin-left: 10px;
-          width: 140px;
+          width: 110px;
           height: 40px;
           border-radius: 4px;
           background-color: $theme-color-gold;
           color: white;
-          text-align: center;
           font-size: 16px;
-          line-height: 40px;
           cursor: pointer;
           &:hover {
             opacity: 0.8;
@@ -946,6 +1154,27 @@ function handleDel(sender) {
           &.gray {
             opacity: 0.5;
             cursor: no-drop;
+          }
+          &.loading {
+            cursor: no-drop;
+          }
+          @keyframes rotate {
+            0% {
+              transform: rotate(0);
+            }
+            50% {
+              transform: rotate(180deg);
+            }
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+          .loading {
+            width: 20px;
+            height: 20px;
+            animation: rotate 1s infinite linear;
+
+            @include setBackground('@/assets/img/sync.png');
           }
         }
       }
@@ -956,7 +1185,16 @@ function handleDel(sender) {
       font-size: 12px;
     }
     .link-config {
+      position: relative;
+      z-index: 9;
       margin-top: 10px;
+      .link-item {
+        margin-bottom: 4px;
+        .link-label {
+          width: 80px;
+          text-align: right;
+        }
+      }
     }
   }
   .invite-info {
@@ -975,9 +1213,7 @@ function handleDel(sender) {
       cursor: pointer;
     }
   }
-  .down {
-    width: 120px;
-  }
+
   .list {
     .item {
       .del {

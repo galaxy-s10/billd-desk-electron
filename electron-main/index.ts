@@ -14,6 +14,8 @@ import {
   shell,
 } from 'electron';
 
+import { WINDOW_ID_ENUM } from '@/constant';
+
 import { GLOBAL_SHORTCUT, IPC_EVENT } from '../src/event';
 import { IIpcRendererData } from '../src/interface';
 
@@ -53,13 +55,16 @@ if (!app.requestSingleInstanceLock()) {
 
 const windowNormalParams = { width: 800, height: 500 };
 let winBounds: Electron.Rectangle | null;
-let mainWindowId = -1;
+const mainWindowId = WINDOW_ID_ENUM.remote;
 const windowMap = new Map<number, BrowserWindow>();
 const appName = app.getName();
 
 async function createWindow({
+  windowId,
   width,
   height,
+  minWidth,
+  minHeight,
   route,
   query,
   x,
@@ -82,9 +87,11 @@ async function createWindow({
     xx = Math.round((workAreaSize.width - w) / 2);
     yy = Math.round((workAreaSize.height - h) / 2);
   }
-  const win = new BrowserWindow({
+  let win = new BrowserWindow({
     width: w,
     height: h,
+    minWidth: minWidth || w,
+    minHeight: minHeight || h,
     autoHideMenuBar: true,
     x: xx,
     y: yy,
@@ -96,29 +103,36 @@ async function createWindow({
     },
     frame,
   });
-  const windowId = win.id;
+  win.webContents.openDevTools({
+    mode: 'detach',
+    activate: true,
+  });
   win.on('close', () => {
     winWebContentsSend({
       windowId,
       channel: IPC_EVENT.response_closeWindow,
       requestId: '',
-      data: { windowId: win.id },
+      data: { windowId },
       code: 0,
     });
   });
   win.on('closed', () => {
+    // @ts-ignore
+    win = null;
+    win.removeAllListeners();
+    windowMap.delete(windowId);
     winWebContentsSend({
       windowId,
       channel: IPC_EVENT.response_closeWindowed,
       requestId: '',
-      data: { windowId: win.id },
+      data: { windowId },
       code: 0,
     });
   });
-  windowMap.set(win.id, win);
+  windowMap.set(windowId, win);
   let url = '';
   const params = `${(route ? route : '') as string}${handleUrlQuery({
-    windowId: `${win.id}`,
+    windowId: `${windowId as number}`,
     ...query,
   })}`;
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -131,7 +145,7 @@ async function createWindow({
       {
         hash: route
           ? `${route as string}${handleUrlQuery({
-              windowId: `${win.id}`,
+              windowId: `${windowId as number}`,
               ...query,
             })}`
           : undefined,
@@ -142,8 +156,8 @@ async function createWindow({
 
 function winWebContentsSend(data: IIpcRendererData) {
   const win = windowMap.get(data.windowId);
-  if (!win?.isDestroyed()) {
-    win?.webContents.send(data.channel, data);
+  if (win && !win?.isDestroyed()) {
+    win.webContents.send(data.channel, data);
   }
 }
 
@@ -184,6 +198,8 @@ function main() {
   const mainWindow = new BrowserWindow({
     width: windowNormalParams.width,
     height: windowNormalParams.height,
+    minWidth: windowNormalParams.width,
+    minHeight: windowNormalParams.height,
     // 隐藏菜单栏
     autoHideMenuBar: true,
     webPreferences: {
@@ -193,7 +209,13 @@ function main() {
     },
     frame: false,
   });
-  mainWindowId = mainWindow.id;
+
+  mainWindow.on('closed', () => {
+    // @ts-ignore
+    mainWindow = null;
+    mainWindow.removeAllListeners();
+    windowMap.delete(mainWindowId);
+  });
 
   // 创建菜单
   const menu = Menu.buildFromTemplate([
@@ -274,20 +296,23 @@ function main() {
 
   handleInitGlobalShortcut();
 
-  ipcMain.on(IPC_EVENT.getWindowId, (_event, reqData: IIpcRendererData) => {
+  ipcMain.handle(IPC_EVENT.getWindowId, (_event, reqData: IIpcRendererData) => {
     console.log(`electron收到${IPC_EVENT.getWindowId}`, reqData);
     const { requestId } = reqData;
     const windowId = _event.sender.id;
     const win = windowMap.get(windowId);
-    if (win) {
-      winWebContentsSend({
-        windowId,
-        channel: IPC_EVENT.response_getWindowId,
-        requestId,
-        data: { id: windowId },
-        code: 0,
-      });
+    const res = {
+      windowId,
+      channel: IPC_EVENT.response_getWindowId,
+      requestId,
+      data: { id: windowId },
+      code: 0,
+    };
+    console.log(win, windowId, windowMap, 'dgsdg');
+    if (!win) {
+      res.code = 1;
     }
+    return res;
   });
 
   ipcMain.on(
@@ -960,9 +985,11 @@ function main() {
     console.log(`electron收到${IPC_EVENT.setWindowBounds}`, reqData);
     const { requestId, data } = reqData;
     const { windowId, width, height } = data;
-    const win = windowMap.get(Number(windowId));
+    const win = windowMap.get(windowId);
     if (win) {
-      win.setBounds({ width, height });
+      if (!win?.isDestroyed()) {
+        win.setBounds({ width, height });
+      }
       winWebContentsSend({
         windowId,
         channel: IPC_EVENT.response_setWindowBounds,
@@ -997,6 +1024,37 @@ function main() {
     }
   );
 
+  ipcMain.handle(
+    IPC_EVENT.setWindowPosition,
+    (_event, reqData: IIpcRendererData) => {
+      console.log(`electron收到${IPC_EVENT.setWindowPosition}`, reqData);
+      const { requestId, data } = reqData;
+      const { x, y, windowId } = data;
+      const win = windowMap.get(windowId);
+      const res = {
+        windowId,
+        channel: IPC_EVENT.response_setWindowPosition,
+        requestId,
+        data: {},
+        code: 0,
+      };
+      if (win) {
+        if (winBounds) {
+          // electron无边框窗口在Windows下拖拽导致窗口放大（Windows系统缩放不为100%时）
+          // https://github.com/electron/electron/issues/20320
+          // https://github.com/electron/electron/issues/10862
+          if (!win?.isDestroyed()) {
+            win.setBounds(winBounds);
+          }
+        }
+        win?.setPosition(x, y);
+      } else {
+        res.code = 1;
+      }
+      return res;
+    }
+  );
+
   ipcMain.on(
     IPC_EVENT.setWindowPosition,
     (_event, reqData: IIpcRendererData) => {
@@ -1005,12 +1063,13 @@ function main() {
       const { x, y, windowId } = data;
       const win = windowMap.get(Number(windowId));
       if (win) {
-        const win = windowMap.get(windowId);
         if (winBounds) {
           // electron无边框窗口在Windows下拖拽导致窗口放大（Windows系统缩放不为100%时）
           // https://github.com/electron/electron/issues/20320
           // https://github.com/electron/electron/issues/10862
-          win?.setBounds(winBounds);
+          if (!win?.isDestroyed()) {
+            win.setBounds(winBounds);
+          }
         }
         win?.setPosition(x, y);
         winWebContentsSend({
@@ -1154,12 +1213,26 @@ function main() {
     async (_event, reqData: IIpcRendererData) => {
       console.log(`electron收到${IPC_EVENT.createWindow}`, reqData);
       const { data } = reqData;
-      const { width, height, route, query, x, y, useWorkAreaSize, frame } =
-        data;
+      const {
+        windowId,
+        width,
+        height,
+        minWidth,
+        minHeight,
+        route,
+        query,
+        x,
+        y,
+        useWorkAreaSize,
+        frame,
+      } = data;
       try {
         await createWindow({
+          windowId,
           width,
           height,
+          minWidth,
+          minHeight,
           route,
           query,
           x,
@@ -1167,6 +1240,7 @@ function main() {
           useWorkAreaSize,
           frame,
         });
+        console.log('createWindow成功');
       } catch (error) {
         console.log('createWindow失败');
         console.log(error);

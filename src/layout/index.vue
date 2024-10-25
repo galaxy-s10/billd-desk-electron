@@ -6,7 +6,7 @@
       @mousedown="startMove"
       @mouseup="endMove"
       @mousemove="moving"
-      @mouseleave="endMove"
+      @mouseleave="handleMouseleave"
     >
       <div class="top-left">
         <div class="left">
@@ -62,6 +62,27 @@
     >
       <RouterView></RouterView>
     </div>
+    <div
+      class="debug-area"
+      @click="handleOpenDebug"
+    ></div>
+    <div
+      class="debug-area-wrap"
+      v-if="appStore.showDebug"
+    >
+      <div
+        class="item"
+        @click="windowReload"
+      >
+        刷新
+      </div>
+      <div
+        class="item"
+        @click="handleOpenDevTools({ windowId: appStore.windowId })"
+      >
+        控制台
+      </div>
+    </div>
     <UpdateModal
       v-if="
         appStore.updateModalInfo &&
@@ -82,39 +103,43 @@
 </template>
 
 <script lang="ts" setup>
-import { getRandomString } from 'billd-utils';
+import { getRandomString, windowReload } from 'billd-utils';
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { WINDOW_ID_ENUM } from '@/constant';
 import { IPC_EVENT } from '@/event';
+import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { IIpcRendererData } from '@/interface';
 import { routerName } from '@/router';
 import { useAppStore } from '@/store/app';
-import { ipcRendererOn, ipcRendererSend } from '@/utils';
+import { ipcRendererInvoke, ipcRendererOn, ipcRendererSend } from '@/utils';
 
 const appStore = useAppStore();
 const router = useRouter();
 const route = useRoute();
 
+const { handleOpenDevTools } = useIpcRendererSend();
+
 // 窗口当前的位置 + 鼠标当前的相对位置 - 鼠标以前的相对位置
 const isMoving = ref<boolean>(false);
 const lastPoint = reactive({ x: 0, y: 0 });
 const useCustomBar = ref(true);
+const clickNum = ref(1);
 
-ipcRendererSend({
-  windowId: 0,
-  channel: IPC_EVENT.getWindowId,
-  requestId: getRandomString(8),
-  data: {},
-});
+init();
 
-ipcRendererOn(
-  IPC_EVENT.response_getWindowId,
-  (_event, data: IIpcRendererData) => {
-    console.log('response_getWindowId', data);
-    appStore.windowId = data.data.id;
+async function init() {
+  const res = await ipcRendererInvoke({
+    windowId: 0,
+    channel: IPC_EVENT.getWindowId,
+    requestId: getRandomString(8),
+    data: {},
+  });
+  if (res.code === 0) {
+    appStore.windowId = res.data.id;
   }
-);
+}
 
 ipcRendererOn(
   IPC_EVENT.response_open_about,
@@ -125,6 +150,7 @@ ipcRendererOn(
       channel: IPC_EVENT.createWindow,
       requestId: getRandomString(8),
       data: {
+        windowId: WINDOW_ID_ENUM.about,
         width: 550,
         height: 380,
         route: routerName.about,
@@ -145,6 +171,7 @@ ipcRendererOn(
       channel: IPC_EVENT.createWindow,
       requestId: getRandomString(8),
       data: {
+        windowId: WINDOW_ID_ENUM.version,
         width: 300,
         height: 300,
         route: routerName.version,
@@ -155,6 +182,17 @@ ipcRendererOn(
     });
   }
 );
+
+function handleOpenDebug() {
+  if (clickNum.value < 5) {
+    clickNum.value += 1;
+    setTimeout(() => {
+      clickNum.value = 1;
+    }, 3000);
+  } else {
+    appStore.showDebug = true;
+  }
+}
 
 function handleClose() {
   ipcRendererSend({
@@ -184,9 +222,13 @@ const endMove = () => {
   isMoving.value = false;
 };
 
-const moving = (e: MouseEvent) => {
+const handleMouseleave = () => {
+  isMoving.value = false;
+};
+
+const moving = async (e: MouseEvent) => {
   if (isMoving.value) {
-    ipcRendererSend({
+    await ipcRendererInvoke({
       windowId: appStore.windowId,
       channel: IPC_EVENT.setWindowPosition,
       requestId: getRandomString(8),
@@ -286,7 +328,7 @@ $sidebar-width: 160px;
     padding: 60px 10px 0;
     width: $sidebar-width;
     height: 100vh;
-    background-color: #f0f3f8;
+    background-color: rgba($color: #fffa65, $alpha: 0.15);
     .user {
       position: relative;
       margin: 0 auto;
@@ -310,16 +352,16 @@ $sidebar-width: 160px;
       .item {
         margin-bottom: 5px;
         padding: 0 10px;
-        height: 30px;
+        height: 35px;
         border-radius: 4px;
         color: #666;
         font-size: 14px;
-        line-height: 30px;
+        line-height: 35px;
         cursor: pointer;
         &.active,
         &:hover {
-          background-color: #ccdff8;
-          color: #3172f6;
+          background-color: rgba($color: $theme-color-gold, $alpha: 0.2);
+          color: $theme-color-gold;
         }
       }
     }
@@ -327,6 +369,27 @@ $sidebar-width: 160px;
   .view {
     box-sizing: border-box;
     width: calc(100vw - $sidebar-width);
+  }
+  .debug-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 300;
+    width: 30px;
+    height: 30px;
+  }
+  .debug-area-wrap {
+    position: fixed;
+    bottom: 40px;
+    left: 0;
+    z-index: 300;
+    display: flex;
+    .item {
+      margin-right: 4px;
+      color: red;
+      font-size: 16px;
+      cursor: pointer;
+    }
   }
 }
 </style>

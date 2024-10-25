@@ -16,207 +16,147 @@
         class="info"
         :class="{ show: showDetail }"
       >
-        <n-space>
-          <n-button @click="windowReload">刷新页面</n-button>
-          <n-button @click="handleOpenDevTools({ windowId })">
-            打开调试
-          </n-button>
-          <n-button @click="handleTest">测试</n-button>
-        </n-space>
+        <div class="debug-info">
+          <div>
+            <span @click="windowReload">刷新</span>
+            <span>，</span>
+            <span @click="handleOpenDevTools({ windowId })">控制台</span>
+          </div>
 
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>版本号</n-input-group-label>
-            <n-input
-              :value="appStore.version"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>最近更新</n-input-group-label>
-            <n-input
-              :value="appStore.lastBuildDate"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-        </n-space>
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>wss</n-input-group-label>
-            <n-input
-              :value="WEBSOCKET_URL"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>axios</n-input-group-label>
-            <n-input
-              :value="AXIOS_BASEURL"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-        </n-space>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>作者微信</n-input-group-label>
-            <n-input
-              :value="AUTHOR_INFO.wechat"
-              disabled
-              placeholder=""
-            />
-            <n-button @click="handleCopy(AUTHOR_INFO.wechat)">复制</n-button>
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>作者QQ</n-input-group-label>
-            <n-input
-              :value="AUTHOR_INFO.qq"
-              disabled
-              placeholder=""
-            />
-            <n-button @click="handleCopy(AUTHOR_INFO.qq)">复制</n-button>
-          </n-input-group>
-        </n-space>
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>github</n-input-group-label>
-            <n-input
-              :value="PROJECT_GITHUB"
-              disabled
-              placeholder=""
-            />
-            <n-button
-              @click="handleOpenExternal({ windowId, url: PROJECT_GITHUB })"
+          <div>
+            <span>窗口Id：</span>
+            <span
+              class="link"
+              @click="handleCopy(windowId)"
             >
-              打开
-            </n-button>
-            <n-button @click="handleCopy(PROJECT_GITHUB)">复制</n-button>
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>web端</n-input-group-label>
-            <n-input
-              :value="WEB_DESK_URL"
-              disabled
-              placeholder=""
-            />
-            <n-button
-              @click="handleOpenExternal({ windowId, url: WEB_DESK_URL })"
+              {{ windowId }}
+            </span>
+            <span>，</span>
+            <span>roomId：</span>
+            <span
+              class="link"
+              @click="handleCopy(roomId)"
             >
-              打开
-            </n-button>
-            <n-button @click="handleCopy(WEB_DESK_URL)">复制</n-button>
-          </n-input-group>
-        </n-space>
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>roomId</n-input-group-label>
-            <n-input
-              v-model:value="roomId"
-              disabled
-              placeholder=""
-            />
-            <n-button @click="handleCopy(roomId)">复制</n-button>
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>socketId</n-input-group-label>
-            <n-input
-              v-model:value="mySocketId"
-              placeholder=""
-              disabled
-            />
-            <n-button @click="handleCopy(mySocketId)">复制</n-button>
-          </n-input-group>
-        </n-space>
+              {{ roomId }}
+            </span>
+          </div>
+          <div>
+            <span>socketId：</span>
+            <span
+              class="link"
+              @click="handleCopy(mySocketId)"
+            >
+              {{ mySocketId }}
+            </span>
+          </div>
+        </div>
 
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>主控uuid</n-input-group-label>
-            <n-input
-              v-model:value="deskUserUuid"
-              disabled
-              placeholder=""
-            />
-            <n-button @click="handleCopy(deskUserUuid)">复制</n-button>
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>主控密码</n-input-group-label>
-            <n-input
-              v-model:value="deskUserPassword"
-              placeholder=""
-            />
-            <n-button @click="handleCopy(deskUserPassword)">复制</n-button>
-          </n-input-group>
-        </n-space>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>被控uuid</n-input-group-label>
-            <n-input
-              v-model:value="remoteDeskUserUuid"
-              disabled
-              placeholder=""
-            />
-            <n-button @click="handleCopy(remoteDeskUserUuid)">复制</n-button>
-          </n-input-group>
-
-          <n-input-group>
-            <n-input-group-label>被控socketId</n-input-group-label>
-            <n-input
-              v-model:value="receiverId"
-              disabled
-              placeholder=""
-            />
-            <n-button @click="handleCopy(receiverId)">复制</n-button>
-          </n-input-group>
-        </n-space>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>窗口id</n-input-group-label>
-            <n-input
-              :value="windowId + ''"
-              placeholder=""
-              disabled
-            />
-            <n-button @click="handleCopy(windowId)">复制</n-button>
-          </n-input-group>
-        </n-space>
-
-        <n-space>
-          <div>模式：</div>
-          <n-radio
-            :checked="!isWatchMode"
-            @change="isWatchMode = !isWatchMode"
-          >
-            控制模式
-          </n-radio>
-          <n-radio
-            :checked="isWatchMode"
-            @change="isWatchMode = !isWatchMode"
-          >
-            观看模式
-          </n-radio>
-        </n-space>
-
-        <n-space>
-          <div>鼠标：</div>
-          <n-radio
-            :checked="showCursor"
-            @change="showCursor = !showCursor"
-          >
-            显示
-          </n-radio>
-          <n-radio
-            :checked="!showCursor"
-            @change="showCursor = !showCursor"
-          >
-            隐藏
-          </n-radio>
-        </n-space>
+        <div class="link-config">
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">模式：</div>
+              <n-radio
+                :checked="!isWatchMode"
+                @change="isWatchMode = !isWatchMode"
+              >
+                控制模式
+              </n-radio>
+              <n-radio
+                :checked="isWatchMode"
+                @change="isWatchMode = !isWatchMode"
+              >
+                观看模式
+              </n-radio>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">鼠标：</div>
+              <n-radio
+                :checked="showCursor"
+                @change="showCursor = !showCursor"
+              >
+                显示
+              </n-radio>
+              <n-radio
+                :checked="!showCursor"
+                @change="showCursor = !showCursor"
+              >
+                隐藏
+              </n-radio>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">码率：</div>
+              <n-radio-group v-model:value="currentMaxBitrate">
+                <n-radio
+                  v-for="item in maxBitrate"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">帧率：</div>
+              <n-radio-group v-model:value="currentMaxFramerate">
+                <n-radio
+                  v-for="item in maxFramerate"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">分辨率：</div>
+              <n-radio-group v-model:value="currentResolutionRatio">
+                <n-radio
+                  v-for="item in resolutionRatio"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">视频内容：</div>
+              <n-radio-group v-model:value="currentVideoContentHint">
+                <n-radio
+                  v-for="item in videoContentHint"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">音频内容：</div>
+              <n-radio-group v-model:value="currentAudioContentHint">
+                <n-radio
+                  v-for="item in audioContentHint"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+        </div>
 
         <n-space>
           <n-input-group>
@@ -255,51 +195,6 @@
             />
           </n-input-group>
         </n-space>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>码率</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentMaxBitrate"
-              :options="maxBitrate"
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>帧率</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentMaxFramerate"
-              :options="maxFramerate"
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>分辨率</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentResolutionRatio"
-              :options="resolutionRatio"
-            />
-          </n-input-group>
-        </n-space>
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>视频内容</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentVideoContentHint"
-              :options="videoContentHint"
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>音频内容</n-input-group-label>
-            <n-select
-              class="down"
-              v-model:value="currentAudioContentHint"
-              :options="audioContentHint"
-            />
-          </n-input-group>
-        </n-space>
       </div>
     </div>
 
@@ -334,20 +229,12 @@ import {
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import {
-  AUTHOR_INFO,
-  AXIOS_BASEURL,
-  NUT_KEY_MAP,
-  PROJECT_GITHUB,
-  WEB_DESK_URL,
-  WEBSOCKET_URL,
-} from '@/constant';
+import { NUT_KEY_MAP, WINDOW_ID_ENUM } from '@/constant';
 import { IPC_EVENT } from '@/event';
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
-import { IIpcRendererData } from '@/interface';
 import { useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
 import {
@@ -363,7 +250,7 @@ import {
   WsConnectStatusEnum,
   WsMsgTypeEnum,
 } from '@/types/websocket';
-import { ipcRendererOn, ipcRendererSend, videoFullBox } from '@/utils';
+import { ipcRendererSend, videoFullBox } from '@/utils';
 
 const route = useRoute();
 const appStore = useAppStore();
@@ -386,7 +273,7 @@ const {
   videoContentHint,
 } = useRTCParams();
 
-const { handleOpenDevTools, handleOpenExternal } = useIpcRendererSend();
+const { handleOpenDevTools } = useIpcRendererSend();
 
 const titlebarHeight = ref(50);
 const loading = ref(true);
@@ -408,7 +295,7 @@ const currentAudioContentHint = ref(audioContentHint.value[0].value);
 let clickTimer: any;
 let isLongClick = false;
 const videoWrapRef = ref<HTMLVideoElement>();
-const windowId = ref(-1);
+const windowId = ref(WINDOW_ID_ENUM.webrtc);
 const roomId = ref('');
 const videoMap = ref(new Map());
 const mySocketId = computed(() => {
@@ -441,25 +328,25 @@ onMounted(() => {
   if (route.query.deskUserUuid !== undefined) {
     deskUserUuid.value = String(route.query.deskUserUuid);
   } else {
-    window.$message.error('deskUserUuid为空');
+    window.$message.error('设备代码为空');
     return;
   }
   if (route.query.deskUserPassword !== undefined) {
     deskUserPassword.value = String(route.query.deskUserPassword);
   } else {
-    window.$message.error('deskUserPassword为空');
+    window.$message.error('临时密码为空');
     return;
   }
   if (route.query.remoteDeskUserUuid !== undefined) {
     remoteDeskUserUuid.value = String(route.query.remoteDeskUserUuid);
   } else {
-    window.$message.error('remoteDeskUserUuid为空');
+    window.$message.error('远程设备代码为空');
     return;
   }
   if (route.query.remoteDeskUserPassword !== undefined) {
     remoteDeskUserPassword.value = String(route.query.remoteDeskUserPassword);
   } else {
-    window.$message.error('remoteDeskUserPassword为空');
+    window.$message.error('远程设备密码为空');
     return;
   }
   if (route.query.roomId !== undefined) {
@@ -480,23 +367,7 @@ onMounted(() => {
   if (route.query.audioContentHint !== undefined) {
     currentAudioContentHint.value = String(route.query.audioContentHint);
   }
-  handleLoopBilldDeskUpdateUserTimer();
-  videoWrapRef.value?.addEventListener('wheel', handleMouseWheel);
-  window.addEventListener('keydown', handleKeyDown);
-  window.addEventListener('keyup', handleKeyUp);
-  initWs({
-    roomId: roomId.value,
-    isAnchor: false,
-    isRemoteDesk: true,
-  });
-  loopGetSettings();
-
-  ipcRendererSend({
-    windowId: windowId.value,
-    channel: IPC_EVENT.getWindowId,
-    requestId: getRandomString(8),
-    data: {},
-  });
+  init();
 });
 
 onUnmounted(() => {
@@ -508,15 +379,20 @@ onUnmounted(() => {
   handleClose();
 });
 
-ipcRendererOn(
-  IPC_EVENT.response_getWindowId,
-  (_event, data: IIpcRendererData) => {
-    console.log('response_getWindowId', data);
-    windowId.value = data.data.id;
-    handleInitIpcRendererOn();
-    handleInitIpcRendererSend();
-  }
-);
+function init() {
+  handleInitIpcRendererOn();
+  handleInitIpcRendererSend();
+  handleLoopBilldDeskUpdateUserTimer();
+  videoWrapRef.value?.addEventListener('wheel', handleMouseWheel);
+  window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('keyup', handleKeyUp);
+  initWs({
+    roomId: roomId.value,
+    isAnchor: false,
+    isRemoteDesk: true,
+  });
+  loopGetSettings();
+}
 
 watch(
   () => connectStatus.value,
@@ -1062,88 +938,6 @@ function handleMouseUp(event: MouseEvent) {
     });
   isLongClick = false;
 }
-
-function handleTest() {
-  // mouseMove({ x: 690, y: 478 });
-  networkStore.rtcMap
-    .get(receiverId.value)
-    ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
-      requestId: getRandomString(8),
-      msgType: WsMsgTypeEnum.billdDeskBehavior,
-      data: {
-        roomId: roomId.value,
-        sender: mySocketId.value,
-        receiver: receiverId.value,
-        keyboardtype: 0,
-        type: BilldDeskBehaviorEnum.mouseMove,
-        x: 690,
-        y: 478,
-        amount: 0,
-      },
-    });
-  setTimeout(() => {
-    // mousePressButtonLeft();
-    networkStore.rtcMap
-      .get(receiverId.value)
-      ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
-        requestId: getRandomString(8),
-        msgType: WsMsgTypeEnum.billdDeskBehavior,
-        data: {
-          roomId: roomId.value,
-          sender: mySocketId.value,
-          receiver: receiverId.value,
-          keyboardtype: 0,
-          type: BilldDeskBehaviorEnum.pressButtonLeft,
-          x: 690,
-          y: 478,
-          amount: 0,
-        },
-      });
-  }, 50);
-  setTimeout(() => {
-    const num = 30;
-    for (let i = 0; i < num; i += 1) {
-      // mouseMove({ x: 690 + i, y: 478 });
-      setTimeout(() => {
-        networkStore.rtcMap
-          .get(receiverId.value)
-          ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
-            requestId: getRandomString(8),
-            msgType: WsMsgTypeEnum.billdDeskBehavior,
-            data: {
-              roomId: roomId.value,
-              sender: mySocketId.value,
-              receiver: receiverId.value,
-              keyboardtype: 0,
-              type: BilldDeskBehaviorEnum.mouseMove,
-              x: 690 - i,
-              y: 478,
-              amount: 0,
-            },
-          });
-      }, 50 * i);
-    }
-    setTimeout(() => {
-      // mouseReleaseButtonLeft();
-      networkStore.rtcMap
-        .get(receiverId.value)
-        ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
-          requestId: getRandomString(8),
-          msgType: WsMsgTypeEnum.billdDeskBehavior,
-          data: {
-            roomId: roomId.value,
-            sender: mySocketId.value,
-            receiver: receiverId.value,
-            keyboardtype: 0,
-            type: BilldDeskBehaviorEnum.releaseButtonLeft,
-            x: 690,
-            y: 478,
-            amount: 0,
-          },
-        });
-    }, 2000);
-  }, 300);
-}
 </script>
 
 <style lang="scss" scoped>
@@ -1179,11 +973,31 @@ function handleTest() {
       width: 800px;
       background-color: white;
       box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      .debug-info {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        padding-right: 5px;
+        font-size: 12px;
+        .link {
+          color: red;
+          cursor: pointer;
+        }
+      }
+      .link-config {
+        position: relative;
+        z-index: 9;
+        margin-top: 10px;
+        .link-item {
+          margin-bottom: 4px;
+          .link-label {
+            width: 80px;
+            text-align: right;
+          }
+        }
+      }
       &.show {
         display: block;
-      }
-      .down {
-        width: 150px;
       }
     }
   }

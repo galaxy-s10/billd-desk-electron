@@ -4,8 +4,8 @@
       ref="inviteInfo"
       class="invite-info"
     >
-邀请您进行远程控制
-BilldDesk设备代码:{{ cacheStore.deskUserUuid }}
+BilldDesk:
+设备代码:{{ cacheStore.deskUserUuid }}
 临时密码:{{ cacheStore.deskUserPassword }}
 </textarea
     >

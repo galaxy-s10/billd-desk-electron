@@ -9,13 +9,16 @@
           @click="emits('close')"
         ></div>
       </div>
+      <div class="uuid">设备代码：{{ uuid }}</div>
       <div class="err-msg">{{ errMsg }}</div>
       <div class="ipt-wrap">
         <input
-          type="text"
+          :type="hidePwd ? 'password' : 'text'"
           class="ipt"
           maxlength="12"
-          v-model="pwd"
+          v-model="password"
+          ref="iptRef"
+          placeholder="请输入连接密码"
         />
         <div
           class="ico eye"
@@ -34,25 +37,39 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
-const pwd = ref('');
 const hidePwd = ref(false);
+const password = ref('');
+const iptRef = ref<HTMLInputElement>();
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
+    uuid?: string;
+    pwd?: string;
     errMsg: string;
   }>(),
   {
+    uuid: '',
+    pwd: '',
     errMsg: '',
   }
 );
 
 const emits = defineEmits(['confirm', 'close']);
 
+onMounted(() => {
+  password.value = props.pwd;
+  iptRef.value?.focus();
+});
+
 function handleConfirm() {
-  if (pwd.value && pwd.value.length > 6 && pwd.value.length < 12) {
-    emits('confirm', pwd.value);
+  if (
+    password.value &&
+    password.value.length > 6 &&
+    password.value.length < 12
+  ) {
+    emits('confirm', password.value);
   } else {
     window.$message.warning('密码长度要求6-12位！');
   }
@@ -61,6 +78,8 @@ function handleConfirm() {
 
 <style lang="scss" scoped>
 .pwd-wrap {
+  position: relative;
+  z-index: 20;
   .mask {
     background-color: rgba($color: #000000, $alpha: 0.3) !important;
 
@@ -73,7 +92,7 @@ function handleConfirm() {
     box-sizing: border-box;
     padding: 15px 20px;
     width: 320px;
-    height: 210px;
+    height: 220px;
     border-radius: 10px;
     background-color: white;
     box-shadow: 0 2px 20px rgb(0 0 0 / 20%);
@@ -94,11 +113,14 @@ function handleConfirm() {
         @include cross(#666, 2px);
       }
     }
-    .err-msg {
+    .uuid {
       margin-top: 10px;
-      height: 40px;
+      color: #666;
+    }
+    .err-msg {
       color: red;
-      line-height: 40px;
+      margin-top: 10px;
+      margin-bottom: 10px;
     }
     .ipt-wrap {
       position: relative;
@@ -116,6 +138,7 @@ function handleConfirm() {
         font-size: 16px;
         &::placeholder {
           color: #c2c2c2;
+          font-size: 14px;
         }
         &:focus {
           border: 1px solid $theme-color-gold;
@@ -134,10 +157,13 @@ function handleConfirm() {
         &.eye {
           @include setBackground('@/assets/img/view.png');
         }
+        &.hide {
+          @include setBackground('@/assets/img/view_off.png');
+        }
       }
     }
     .btn {
-      margin-top: 20px;
+      margin-top: 15px;
       margin-left: auto;
       width: 80px;
       height: 32px;

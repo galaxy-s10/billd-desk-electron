@@ -5,6 +5,10 @@ import { LS_KEY_PREFIX } from '@/constant';
 export type PiniaCacheRootState = {
   muted: boolean;
   volume: number;
+  linkDeviceList: {
+    remoteDeskUserUuid: string;
+    remoteDeskUserPassword: string;
+  }[];
   isAlwaysOnTop: boolean;
   hidePwd: boolean;
   deskUserUuid: string;
@@ -21,6 +25,7 @@ export const usePiniaCacheStore = defineStore(`${LS_KEY_PREFIX}pinia-cache`, {
     return {
       muted: true,
       volume: 70,
+      linkDeviceList: [],
       isAlwaysOnTop: false,
       hidePwd: false,
       deskUserUuid: '',

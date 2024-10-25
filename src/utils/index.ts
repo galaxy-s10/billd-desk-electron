@@ -16,12 +16,24 @@ export function ipcRendererSend(data: IIpcRendererData) {
     data: { windowId: data.windowId, ...data.data },
   });
 }
+export function ipcRendererInvoke(data: IIpcRendererData) {
+  console.log('ipcRendererInvoke', data.channel, data.data);
+  return ipcRenderer?.invoke(data.channel, {
+    requestId: data.requestId,
+    data: { windowId: data.windowId, ...data.data },
+  });
+}
 
 export function ipcRendererOn(channel, cb) {
   if (ipcRendererOnMap[channel]) return;
   ipcRendererOnMap[channel] = true;
   console.log('ipcRendererOn', channel);
   ipcRenderer?.on(channel, cb);
+}
+
+export function ipcRendererOff(channel, cb) {
+  console.log('ipcRendererOff', channel);
+  ipcRenderer?.removeListener(channel, cb);
 }
 
 /** 设置约束 */
