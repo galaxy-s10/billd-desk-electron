@@ -1,6 +1,6 @@
 {
   "name": "billd-desk-electron",
-  "version": "0.0.131",
+  "version": "0.0.132",
   "description": "billd desk客户端",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "build:mac": "standard-version && vite build && electron-builder --mac",
     "build:mw": "standard-version && vite build && electron-builder --mac --win",
     "build:win": "standard-version && vite build && electron-builder --win",
-    "dev": "vite",
+    "dev": "rimraf electron-dist dist && vite",
     "gen-icons": "electron-icon-builder --input=./src/assets/img/billd.jpg --output=build --flatten",
     "preview": "vite preview",
     "release": "standard-version"
@@ -63,6 +63,7 @@
     "eslint-plugin-import": "^2.28.0",
     "eslint-plugin-vue": "^9.15.1",
     "prettier": "^3.0.1",
+    "rimraf": "^6.0.1",
     "sass": "^1.63.6",
     "standard-version": "^9.5.0",
     "trash": "^8.1.1",
