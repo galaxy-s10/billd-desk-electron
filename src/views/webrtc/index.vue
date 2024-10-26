@@ -294,6 +294,7 @@ const currentAudioContentHint = ref(audioContentHint.value[0].value);
 
 let clickTimer: any;
 let isLongClick = false;
+const videoList = ref<HTMLVideoElement[]>([]);
 const videoWrapRef = ref<HTMLVideoElement>();
 const windowId = ref(WINDOW_ID_ENUM.webrtc);
 const roomId = ref('');
@@ -367,17 +368,26 @@ onMounted(() => {
   if (route.query.audioContentHint !== undefined) {
     currentAudioContentHint.value = String(route.query.audioContentHint);
   }
+  window.addEventListener('resize', handleResize);
   init();
 });
 
 onUnmounted(() => {
   clearInterval(loopBilldDeskUpdateUserTimer.value);
   videoWrapRef.value?.removeEventListener('wheel', handleMouseWheel);
+  window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('keyup', handleKeyUp);
   networkStore.removeAllWsAndRtc();
   handleClose();
 });
+
+function handleResize() {
+  videoList.value.forEach((item) => {
+    console.log(item);
+    handleVideoElSize(item, false);
+  });
+}
 
 function init() {
   handleInitIpcRendererOn();
@@ -652,6 +662,38 @@ function handleClose() {
   networkStore.removeAllWsAndRtc();
 }
 
+function handleVideoElSize(videoEl, setWindowBounds = false) {
+  if (!videoWrapRef.value) return;
+  const clientWidth = document.documentElement.clientWidth;
+  const clientHeight = document.documentElement.clientHeight;
+  const res = computeBox({
+    width: videoEl.videoWidth,
+    height: videoEl.videoHeight,
+    maxHeight: clientWidth,
+    minHeight: 0,
+    maxWidth: clientHeight,
+    minWidth: 0,
+  });
+  videoFullBox({
+    wrapSize: {
+      width: clientWidth,
+      height: clientHeight,
+    },
+    videoEl,
+  });
+  if (res.width && res.height && setWindowBounds) {
+    ipcRendererSend({
+      windowId: windowId.value,
+      channel: IPC_EVENT.setWindowBounds,
+      requestId: getRandomString(8),
+      data: {
+        width: Math.ceil(res.width),
+        height: Math.ceil(res.height + titlebarHeight.value),
+      },
+    });
+  }
+}
+
 watch(
   () => appStore.remoteDesk.size,
   (newval) => {
@@ -675,45 +717,16 @@ watch(
 
         videoMap.value.set(item.receiver, 1);
         item.videoEl.addEventListener('loadedmetadata', async () => {
-          if (!videoWrapRef.value) return;
-          const rect = videoWrapRef.value.getBoundingClientRect();
-          const res = computeBox({
-            width: item.videoEl.videoWidth,
-            height: item.videoEl.videoHeight,
-            maxHeight: rect.height,
-            minHeight: 0,
-            maxWidth: rect.width,
-            minWidth: 0,
+          const res1 = await ipcRendererInvoke({
+            windowId: windowId.value,
+            channel: IPC_EVENT.getWindowTitlebarHeight,
+            requestId: getRandomString(8),
+            data: {},
           });
-
-          videoFullBox({
-            wrapSize: {
-              width: res.width,
-              height: res.height,
-            },
-            videoEl: item.videoEl,
-          });
-          if (res.width && res.height) {
-            const res1 = await ipcRendererInvoke({
-              windowId: windowId.value,
-              channel: IPC_EVENT.getWindowTitlebarHeight,
-              requestId: getRandomString(8),
-              data: {},
-            });
-            console.log(res, 'dsfdsg');
-            if (res1.code === 0) {
-              titlebarHeight.value = res1.data.height;
-            }
-            ipcRendererSend({
-              windowId: windowId.value,
-              channel: IPC_EVENT.setWindowBounds,
-              requestId: getRandomString(8),
-              data: {
-                width: Math.ceil(res.width),
-                height: Math.ceil(res.height + titlebarHeight.value),
-              },
-            });
+          if (res1?.code === 0) {
+            titlebarHeight.value = res1.data.height;
           }
+          handleVideoElSize(item.videoEl, true);
         });
         videoWrapRef.value.appendChild(item.videoEl);
       }

@@ -1,4 +1,4 @@
-import path from 'path';
+// import path from 'path';
 import { platform } from 'process';
 
 import {
@@ -19,6 +19,8 @@ import { WINDOW_ID_ENUM } from '../src/pure-constant';
 import { IIpcRendererData } from '../src/pure-interface';
 
 import { nutjsTs } from './types';
+
+const path = require('path');
 
 const nutjs: nutjsTs = require('@nut-tree-fork/nut-js');
 
@@ -101,10 +103,6 @@ async function createWindow({
       preload: path.join(__dirname, 'preload.js'),
     },
     frame,
-  });
-  win.webContents.openDevTools({
-    mode: 'detach',
-    activate: true,
   });
 
   windowMap.set(windowId, win);

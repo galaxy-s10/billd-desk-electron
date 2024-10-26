@@ -562,7 +562,7 @@ async function handleInitIpcRendererSend() {
     data: {},
   });
 
-  if (res.code === 0) {
+  if (res?.code === 0) {
     appStore.primaryDisplaySize.width = res.data.width;
     appStore.primaryDisplaySize.height = res.data.height;
   }
@@ -573,7 +573,7 @@ async function handleInitIpcRendererSend() {
     requestId: getRandomString(8),
     data: {},
   });
-  if (res1.code === 0) {
+  if (res1?.code === 0) {
     if (res1.data.platform !== 'darwin') {
       appStore.scaleFactor = res1.data.scaleFactor;
     }
@@ -727,8 +727,8 @@ async function handleDesktopStream(chromeMediaSourceId) {
       },
     });
     anchorStream.value = stream;
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.log(error);
   }
 }
 
@@ -765,8 +765,8 @@ async function handleRTC(receiver) {
       sender: mySocketId.value,
       receiver,
     });
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.log(error);
   }
 }
 

@@ -1,4 +1,4 @@
-import { getRandomString } from 'billd-utils';
+import { getRandomString, openToTarget } from 'billd-utils';
 
 import { IPC_EVENT } from '@/event';
 import { useAppStore } from '@/store/app';
@@ -6,7 +6,7 @@ import {
   BilldDeskBehaviorEnum,
   WsBilldDeskBehaviorType,
 } from '@/types/websocket';
-import { ipcRendererInvoke, ipcRendererSend } from '@/utils';
+import { ipcRenderer, ipcRendererInvoke, ipcRendererSend } from '@/utils';
 
 export const useIpcRendererSend = () => {
   const appStore = useAppStore();
@@ -122,12 +122,16 @@ export const useIpcRendererSend = () => {
   }
 
   function handleOpenExternal({ windowId, url }) {
-    ipcRendererInvoke({
-      windowId,
-      channel: IPC_EVENT.shellOpenExternal,
-      requestId: getRandomString(8),
-      data: { url },
-    });
+    if (!ipcRenderer) {
+      openToTarget(url);
+    } else {
+      ipcRendererInvoke({
+        windowId,
+        channel: IPC_EVENT.shellOpenExternal,
+        requestId: getRandomString(8),
+        data: { url },
+      });
+    }
   }
 
   function keyboardType({ windowId, key }) {
@@ -205,13 +209,6 @@ export const useIpcRendererSend = () => {
       (appStore.primaryDisplaySize.height || 0) *
       appStore.scaleFactor *
       (data.y / 1000);
-    console.log(
-      'dfdfdf',
-      appStore.primaryDisplaySize,
-      appStore.scaleFactor,
-      data.x,
-      data.y
-    );
     if (data.type === BilldDeskBehaviorEnum.setPosition) {
       mouseSetPosition({ windowId, x, y });
     } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {

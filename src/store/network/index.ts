@@ -33,7 +33,6 @@ export const useNetworkStore = defineStore('network', {
     },
     removeRtc(socketId: string) {
       const old = this.rtcMap.get(socketId);
-      console.log(old, 'old');
       if (old) {
         old.close();
       }
@@ -51,7 +50,6 @@ export const useNetworkStore = defineStore('network', {
     },
     removeAllRtc() {
       this.rtcMap.forEach((item) => {
-        console.log('item', item.receiver, item.sender);
         item.close();
       });
       this.rtcMap.clear();

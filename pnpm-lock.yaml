@@ -41,12 +41,6 @@ importers:
       billd-utils:
         specifier: ^0.0.22
         version: 0.0.22(tslib@2.6.2)(typescript@5.1.6)
-      commitizen:
-        specifier: ^4.3.1
-        version: 4.3.1(@types/node@20.4.1)(typescript@5.1.6)
-      electron-icon-builder:
-        specifier: ^2.0.1
-        version: 2.0.1
       js-cookie:
         specifier: ^3.0.5
         version: 3.0.5
@@ -68,9 +62,6 @@ importers:
       vconsole:
         specifier: ^3.15.1
         version: 3.15.1
-      vite-plugin-html:
-        specifier: ^3.2.2
-        version: 3.2.2(vite@4.4.0(@types/node@20.4.1)(sass@1.63.6)(terser@5.27.0))
       vue:
         specifier: ^3.3.4
         version: 3.3.4
@@ -105,12 +96,18 @@ importers:
       '@vue/eslint-config-typescript':
         specifier: ^11.0.3
         version: 11.0.3(eslint-plugin-vue@9.15.1(eslint@8.47.0))(eslint@8.47.0)(typescript@5.1.6)
+      commitizen:
+        specifier: ^4.3.1
+        version: 4.3.1(@types/node@20.4.1)(typescript@5.1.6)
       electron:
         specifier: ^29.0.1
         version: 29.0.1
       electron-builder:
         specifier: ^24.12.0
         version: 24.12.0
+      electron-icon-builder:
+        specifier: ^2.0.1
+        version: 2.0.1
       eslint:
         specifier: ^8.47.0
         version: 8.47.0
@@ -168,6 +165,9 @@ importers:
       vite-plugin-eslint:
         specifier: ^1.8.1
         version: 1.8.1(eslint@8.47.0)(vite@4.4.0(@types/node@20.4.1)(sass@1.63.6)(terser@5.27.0))
+      vite-plugin-html:
+        specifier: ^3.2.2
+        version: 3.2.2(vite@4.4.0(@types/node@20.4.1)(sass@1.63.6)(terser@5.27.0))
       vue-tsc:
         specifier: ^1.8.8
         version: 1.8.8(typescript@5.1.6)
