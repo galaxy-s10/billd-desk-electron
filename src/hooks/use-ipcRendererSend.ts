@@ -6,7 +6,7 @@ import {
   BilldDeskBehaviorEnum,
   WsBilldDeskBehaviorType,
 } from '@/types/websocket';
-import { ipcRendererSend } from '@/utils';
+import { ipcRendererInvoke, ipcRendererSend } from '@/utils';
 
 export const useIpcRendererSend = () => {
   const appStore = useAppStore();
@@ -122,7 +122,7 @@ export const useIpcRendererSend = () => {
   }
 
   function handleOpenExternal({ windowId, url }) {
-    ipcRendererSend({
+    ipcRendererInvoke({
       windowId,
       channel: IPC_EVENT.shellOpenExternal,
       requestId: getRandomString(8),
@@ -205,6 +205,13 @@ export const useIpcRendererSend = () => {
       (appStore.primaryDisplaySize.height || 0) *
       appStore.scaleFactor *
       (data.y / 1000);
+    console.log(
+      'dfdfdf',
+      appStore.primaryDisplaySize,
+      appStore.scaleFactor,
+      data.x,
+      data.y
+    );
     if (data.type === BilldDeskBehaviorEnum.setPosition) {
       mouseSetPosition({ windowId, x, y });
     } else if (data.type === BilldDeskBehaviorEnum.mouseMove) {

@@ -121,7 +121,7 @@ export type AppRootState = {
 export const useAppStore = defineStore('app', {
   state: (): AppRootState => {
     return {
-      showDebug: false,
+      showDebug: true,
       version: '',
       updateModalInfo: undefined,
       deskVersionInfo: undefined,

@@ -8,7 +8,7 @@
 import { GlobalThemeOverrides, NConfigProvider } from 'naive-ui';
 import { onMounted } from 'vue';
 
-import { APP_BUILD_INFO } from '@/constant';
+import { APP_BUILD_INFO, WINDOW_ID_ENUM } from '@/constant';
 import { useAppStore } from '@/store/app';
 
 import {
@@ -34,7 +34,7 @@ onMounted(() => {
   appStore.version = APP_BUILD_INFO.pkgVersion;
   appStore.lastBuildDate = APP_BUILD_INFO.lastBuildDate;
   handlesetAlwaysOnTop({
-    windowId: appStore.windowId,
+    windowId: WINDOW_ID_ENUM.remote,
     flag: cacheStore.isAlwaysOnTop,
   });
   getClient();

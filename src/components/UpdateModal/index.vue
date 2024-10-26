@@ -22,7 +22,7 @@
         class="btn"
         @click="
           handleOpenExternal({
-            windowId: appStore.windowId,
+            windowId: WINDOW_ID_ENUM.remote,
             url: appStore.updateModalInfo?.download.macos_dmg,
           })
         "
@@ -35,6 +35,7 @@
 
 <script lang="ts" setup>
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
+import { WINDOW_ID_ENUM } from '@/pure-constant';
 import { useAppStore } from '@/store/app';
 
 const appStore = useAppStore();

@@ -1,3 +1,4 @@
+export * from '@/pure-constant';
 import { Key } from '@nut-tree-fork/shared';
 
 import { BilldHtmlWebpackPluginLog } from '@/interface';
@@ -22,9 +23,11 @@ export const APP_BUILD_INFO = process.env
 
 export const NODE_ENV = process.env.NODE_ENV;
 
+export const COTURN_URL = `turn:hk.${prodDomain}`;
+
 // ======本地调试=====
 
-const LOCALHOST_IP = '10.10.20.71:4300';
+const LOCALHOST_IP = '192.168.1.101:4300';
 
 export const WEBSOCKET_URL =
   process.env.NODE_ENV === 'development'
@@ -56,13 +59,6 @@ export const COOKIE_DOMAIN =
 export const THEME_COLOR = '#ffd700';
 
 export const PRODUCT_NAME = 'BilldDesk';
-
-export enum WINDOW_ID_ENUM {
-  remote = 1,
-  webrtc,
-  about,
-  version,
-}
 
 export const NUT_KEY_MAP = {
   A: Key.A,
@@ -171,4 +167,7 @@ export const LS_KEY = {
   uuid: 'uuid',
   password: 'password',
   token: 'token',
+  axiosBaseUrl: 'axiosBaseUrl',
+  wssUrl: 'wssUrl',
+  coturnUrl: 'coturnUrl',
 };

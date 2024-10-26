@@ -78,7 +78,7 @@
       </div>
       <div
         class="item"
-        @click="handleOpenDevTools({ windowId: appStore.windowId })"
+        @click="handleOpenDevTools({ windowId: WINDOW_ID_ENUM.remote })"
       >
         控制台
       </div>
@@ -126,20 +126,6 @@ const isMoving = ref<boolean>(false);
 const lastPoint = reactive({ x: 0, y: 0 });
 const useCustomBar = ref(true);
 const clickNum = ref(1);
-
-init();
-
-async function init() {
-  const res = await ipcRendererInvoke({
-    windowId: 0,
-    channel: IPC_EVENT.getWindowId,
-    requestId: getRandomString(8),
-    data: {},
-  });
-  if (res.code === 0) {
-    appStore.windowId = res.data.id;
-  }
-}
 
 ipcRendererOn(
   IPC_EVENT.response_open_about,
@@ -196,7 +182,7 @@ function handleOpenDebug() {
 
 function handleClose() {
   ipcRendererSend({
-    windowId: appStore.windowId,
+    windowId: WINDOW_ID_ENUM.remote,
     channel: IPC_EVENT.closeAllWindow,
     requestId: getRandomString(8),
     data: {},
@@ -205,7 +191,7 @@ function handleClose() {
 
 function handleMin() {
   ipcRendererSend({
-    windowId: appStore.windowId,
+    windowId: WINDOW_ID_ENUM.remote,
     channel: IPC_EVENT.windowMinimize,
     requestId: getRandomString(8),
     data: {},
@@ -229,7 +215,7 @@ const handleMouseleave = () => {
 const moving = async (e: MouseEvent) => {
   if (isMoving.value) {
     await ipcRendererInvoke({
-      windowId: appStore.windowId,
+      windowId: WINDOW_ID_ENUM.remote,
       channel: IPC_EVENT.setWindowPosition,
       requestId: getRandomString(8),
       data: {

@@ -250,7 +250,7 @@ import {
   WsConnectStatusEnum,
   WsMsgTypeEnum,
 } from '@/types/websocket';
-import { ipcRendererSend, videoFullBox } from '@/utils';
+import { ipcRendererInvoke, ipcRendererSend, videoFullBox } from '@/utils';
 
 const route = useRoute();
 const appStore = useAppStore();
@@ -557,14 +557,7 @@ function handleWsMsg() {
   });
 }
 
-function handleInitIpcRendererSend() {
-  ipcRendererSend({
-    windowId: windowId.value,
-    channel: IPC_EVENT.getWindowTitlebarHeight,
-    requestId: getRandomString(8),
-    data: {},
-  });
-}
+async function handleInitIpcRendererSend() {}
 
 function handleInitIpcRendererOn() {}
 
@@ -681,7 +674,7 @@ watch(
         }
 
         videoMap.value.set(item.receiver, 1);
-        item.videoEl.addEventListener('loadedmetadata', () => {
+        item.videoEl.addEventListener('loadedmetadata', async () => {
           if (!videoWrapRef.value) return;
           const rect = videoWrapRef.value.getBoundingClientRect();
           const res = computeBox({
@@ -701,6 +694,16 @@ watch(
             videoEl: item.videoEl,
           });
           if (res.width && res.height) {
+            const res1 = await ipcRendererInvoke({
+              windowId: windowId.value,
+              channel: IPC_EVENT.getWindowTitlebarHeight,
+              requestId: getRandomString(8),
+              data: {},
+            });
+            console.log(res, 'dsfdsg');
+            if (res1.code === 0) {
+              titlebarHeight.value = res1.data.height;
+            }
             ipcRendererSend({
               windowId: windowId.value,
               channel: IPC_EVENT.setWindowBounds,

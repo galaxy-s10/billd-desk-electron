@@ -1,18 +1,10 @@
+export * from '@/pure-interface';
 import {
   ILiveRoom,
   LiveRoomIsShowEnum,
   LiveRoomStatusEnum,
 } from '@/types/ILiveRoom';
 import { IUser } from '@/types/IUser';
-
-export interface IIpcRendererData {
-  windowId: number;
-  channel: any;
-  requestId: string;
-  data: any;
-  code?: number;
-  msg?: string;
-}
 
 export interface IFlvStatistics {
   url: string;

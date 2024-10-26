@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import { AUTHOR_INFO, PRODUCT_NAME } from '@/constant';
+import { AUTHOR_INFO, PRODUCT_NAME, WINDOW_ID_ENUM } from '@/constant';
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { useAppStore } from '@/store/app';
 
@@ -24,7 +24,7 @@ const appStore = useAppStore();
 
 function handleClick() {
   handleOpenExternal({
-    windowId: appStore.windowId,
+    windowId: WINDOW_ID_ENUM.about,
     url: AUTHOR_INFO.github,
   });
 }

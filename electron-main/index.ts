@@ -14,10 +14,9 @@ import {
   shell,
 } from 'electron';
 
-import { WINDOW_ID_ENUM } from '@/constant';
-
 import { GLOBAL_SHORTCUT, IPC_EVENT } from '../src/event';
-import { IIpcRendererData } from '../src/interface';
+import { WINDOW_ID_ENUM } from '../src/pure-constant';
+import { IIpcRendererData } from '../src/pure-interface';
 
 import { nutjsTs } from './types';
 
@@ -87,7 +86,7 @@ async function createWindow({
     xx = Math.round((workAreaSize.width - w) / 2);
     yy = Math.round((workAreaSize.height - h) / 2);
   }
-  let win = new BrowserWindow({
+  const win = new BrowserWindow({
     width: w,
     height: h,
     minWidth: minWidth || w,
@@ -107,28 +106,7 @@ async function createWindow({
     mode: 'detach',
     activate: true,
   });
-  win.on('close', () => {
-    winWebContentsSend({
-      windowId,
-      channel: IPC_EVENT.response_closeWindow,
-      requestId: '',
-      data: { windowId },
-      code: 0,
-    });
-  });
-  win.on('closed', () => {
-    // @ts-ignore
-    win = null;
-    win.removeAllListeners();
-    windowMap.delete(windowId);
-    winWebContentsSend({
-      windowId,
-      channel: IPC_EVENT.response_closeWindowed,
-      requestId: '',
-      data: { windowId },
-      code: 0,
-    });
-  });
+
   windowMap.set(windowId, win);
   let url = '';
   const params = `${(route ? route : '') as string}${handleUrlQuery({
@@ -152,6 +130,28 @@ async function createWindow({
       }
     );
   }
+  win.on('close', () => {
+    console.log('close', windowId);
+    winWebContentsSend({
+      windowId,
+      channel: IPC_EVENT.response_closeWindow,
+      requestId: '',
+      data: { windowId },
+      code: 0,
+    });
+  });
+  win.on('closed', () => {
+    console.log('closed', windowId);
+    win.removeAllListeners();
+    windowMap.delete(windowId);
+    winWebContentsSend({
+      windowId,
+      channel: IPC_EVENT.response_closeWindowed,
+      requestId: '',
+      data: { windowId },
+      code: 0,
+    });
+  });
 }
 
 function winWebContentsSend(data: IIpcRendererData) {
@@ -210,11 +210,33 @@ function main() {
     frame: false,
   });
 
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL as string);
+  } else {
+    mainWindow.loadFile(path.join(process.env.DIST as string, 'index.html'));
+  }
+
+  windowMap.set(mainWindowId, mainWindow);
+
+  mainWindow.on('close', () => {
+    console.log('mainWindow-close');
+    windowMap.forEach((item) => {
+      if (!item?.isDestroyed()) {
+        item.removeAllListeners();
+        item.close();
+      }
+    });
+    windowMap.clear();
+  });
   mainWindow.on('closed', () => {
-    // @ts-ignore
-    mainWindow = null;
-    mainWindow.removeAllListeners();
-    windowMap.delete(mainWindowId);
+    console.log('mainWindow-closed');
+    windowMap.forEach((item) => {
+      if (!item?.isDestroyed()) {
+        item.removeAllListeners();
+        item.close();
+      }
+    });
+    windowMap.clear();
   });
 
   // 创建菜单
@@ -292,54 +314,27 @@ function main() {
   Menu.setApplicationMenu(menu);
 
   winBounds = mainWindow.getBounds();
-  windowMap.set(mainWindow.id, mainWindow);
 
   handleInitGlobalShortcut();
 
-  ipcMain.handle(IPC_EVENT.getWindowId, (_event, reqData: IIpcRendererData) => {
-    console.log(`electron收到${IPC_EVENT.getWindowId}`, reqData);
-    const { requestId } = reqData;
-    const windowId = _event.sender.id;
-    const win = windowMap.get(windowId);
-    const res = {
-      windowId,
-      channel: IPC_EVENT.response_getWindowId,
-      requestId,
-      data: { id: windowId },
-      code: 0,
-    };
-    console.log(win, windowId, windowMap, 'dgsdg');
-    if (!win) {
-      res.code = 1;
-    }
-    return res;
-  });
-
-  ipcMain.on(
+  ipcMain.handle(
     IPC_EVENT.shellOpenExternal,
     async (_event, reqData: IIpcRendererData) => {
       console.log(`electron收到${IPC_EVENT.shellOpenExternal}`, reqData);
       const { requestId, data } = reqData;
-      const { windowId, url } = data;
+      const { url } = data;
+      const res = {
+        requestId,
+        data: {},
+        code: 0,
+      };
       try {
         await shell.openExternal(url);
-        winWebContentsSend({
-          windowId,
-          channel: IPC_EVENT.response_shellOpenExternal,
-          requestId,
-          data: {},
-          code: 0,
-        });
       } catch (error) {
-        winWebContentsSend({
-          windowId,
-          channel: IPC_EVENT.response_shellOpenExternal,
-          requestId: '',
-          data,
-          code: 1,
-          msg: JSON.stringify(error),
-        });
+        console.log(error);
+        res.code = 1;
       }
+      return res;
     }
   );
 
@@ -405,6 +400,7 @@ function main() {
     console.log(`electron收到${IPC_EVENT.closeAllWindow}`, reqData);
     windowMap.forEach((item) => {
       if (!item?.isDestroyed()) {
+        item.removeAllListeners();
         item.close();
       }
     });
@@ -1000,27 +996,29 @@ function main() {
     }
   });
 
-  ipcMain.on(
+  ipcMain.handle(
     IPC_EVENT.getWindowTitlebarHeight,
     (_event, reqData: IIpcRendererData) => {
       console.log(`electron收到${IPC_EVENT.getWindowTitlebarHeight}`, reqData);
       const { requestId, data } = reqData;
       const { windowId } = data;
       const win = windowMap.get(Number(windowId));
+      const res = {
+        windowId,
+        requestId,
+        data: { height: 0 },
+        code: 0,
+      };
       if (win) {
         const contentBounds = win.getContentBounds();
         const windowBounds = win.getBounds();
         const borderWidth = (windowBounds.width - contentBounds.width) / 2;
-        const titlebarHeight =
+        res.data.height =
           windowBounds.height - contentBounds.height - borderWidth;
-        winWebContentsSend({
-          windowId,
-          channel: IPC_EVENT.response_getWindowTitlebarHeight,
-          requestId,
-          data: { titlebarHeight },
-          code: 0,
-        });
+      } else {
+        res.code = 1;
       }
+      return res;
     }
   );
 
@@ -1033,7 +1031,6 @@ function main() {
       const win = windowMap.get(windowId);
       const res = {
         windowId,
-        channel: IPC_EVENT.response_setWindowPosition,
         requestId,
         data: {},
         code: 0,
@@ -1150,29 +1147,29 @@ function main() {
     }
   });
 
-  ipcMain.on(IPC_EVENT.scaleFactor, (_event, reqData: IIpcRendererData) => {
+  ipcMain.handle(IPC_EVENT.scaleFactor, (_event, reqData: IIpcRendererData) => {
     console.log(`electron收到${IPC_EVENT.scaleFactor}`, reqData);
     const { requestId, data } = reqData;
     const { windowId } = data;
     const win = windowMap.get(Number(windowId));
+    const res = {
+      windowId,
+      requestId,
+      data: { scaleFactor: 0, platform: '' },
+      code: 0,
+    };
     if (win) {
       const scaleFactor = screen.getPrimaryDisplay().scaleFactor;
-      winWebContentsSend({
-        windowId,
-        channel: IPC_EVENT.response_scaleFactor,
-        requestId,
-        data: { scaleFactor, platform },
-        code: 0,
-      });
+      res.data.scaleFactor = scaleFactor;
+      res.data.platform = platform;
+    } else {
+      res.code = 1;
     }
+    return res;
   });
 
   ipcMain.on(IPC_EVENT.workAreaSize, (_event, reqData: IIpcRendererData) => {
-    console.log(
-      `electron收到${IPC_EVENT.workAreaSize}`,
-      _event.sender.id,
-      reqData
-    );
+    console.log(`electron收到${IPC_EVENT.workAreaSize}`, reqData);
     const { requestId, data } = reqData;
     const { windowId } = data;
     const win = windowMap.get(Number(windowId));
@@ -1188,23 +1185,27 @@ function main() {
     }
   });
 
-  ipcMain.on(
+  ipcMain.handle(
     IPC_EVENT.getPrimaryDisplaySize,
     (_event, reqData: IIpcRendererData) => {
       console.log(`electron收到${IPC_EVENT.getPrimaryDisplaySize}`, reqData);
       const { requestId, data } = reqData;
       const { windowId } = data;
       const win = windowMap.get(Number(windowId));
+      const res = {
+        windowId,
+        requestId,
+        data: { width: 0, height: 0 },
+        code: 0,
+      };
       if (win) {
         const { width, height } = screen.getPrimaryDisplay().size;
-        winWebContentsSend({
-          windowId,
-          channel: IPC_EVENT.response_getPrimaryDisplaySize,
-          requestId,
-          data: { width, height },
-          code: 0,
-        });
+        res.data.width = width;
+        res.data.height = height;
+      } else {
+        res.code = 1;
       }
+      return res;
     }
   );
 
@@ -1247,12 +1248,6 @@ function main() {
       }
     }
   );
-
-  if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL as string);
-  } else {
-    mainWindow.loadFile(path.join(process.env.DIST as string, 'index.html'));
-  }
 }
 
 app.on('ready', () => {
@@ -1280,6 +1275,7 @@ app.on('ready', () => {
       });
     });
   });
+  main();
 });
 
 app.on('window-all-closed', () => {
@@ -1287,4 +1283,4 @@ app.on('window-all-closed', () => {
   windowMap.clear();
 });
 
-app.whenReady().then(main);
+// app.whenReady().then(main);

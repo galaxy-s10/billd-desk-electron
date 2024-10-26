@@ -24,14 +24,14 @@
       </div>
       <div class="hr"></div>
       <div class="item">
-        <div class="label">接口信息</div>
+        <div class="label">接口配置</div>
         <div class="value">
           <div class="v-item one">
             <span
               class="link"
-              @click="handleCopy(WEBSOCKET_URL)"
+              @click="handleCopy(getWssUrl() || WEBSOCKET_URL)"
             >
-              wss：{{ WEBSOCKET_URL }}
+              wss：{{ getWssUrl() || WEBSOCKET_URL }}
             </span>
           </div>
           <div class="v-item two">
@@ -40,12 +40,12 @@
               class="link"
               @click="
                 handleOpenExternal({
-                  windowId: appStore.windowId,
-                  url: AXIOS_BASEURL,
+                  windowId: WINDOW_ID_ENUM.remote,
+                  url: getAxiosBaseUrl() || AXIOS_BASEURL,
                 })
               "
             >
-              <span>{{ AXIOS_BASEURL }}</span>
+              <span>{{ getAxiosBaseUrl() || AXIOS_BASEURL }}</span>
               <span>
                 <VPIconExternalLink class="icon"></VPIconExternalLink>
               </span>
@@ -54,10 +54,16 @@
           <div class="v-item two">
             <span
               class="link"
-              @click="handleCopy(`turn:hk.${prodDomain}`)"
+              @click="handleCopy(getCoturnUrl() || COTURN_URL)"
             >
-              coturn：{{ `turn:hk.${prodDomain}` }}
+              coturn：{{ getCoturnUrl() || COTURN_URL }}
             </span>
+          </div>
+          <div
+            class="v-item edit"
+            @click="showUrlModalCpt = true"
+          >
+            修改
           </div>
         </div>
       </div>
@@ -88,7 +94,7 @@
                 class="link"
                 @click="
                   handleOpenExternal({
-                    windowId: appStore.windowId,
+                    windowId: WINDOW_ID_ENUM.remote,
                     url: AUTHOR_INFO.github,
                   })
                 "
@@ -109,7 +115,7 @@
               class="link"
               @click="
                 handleOpenExternal({
-                  windowId: appStore.windowId,
+                  windowId: WINDOW_ID_ENUM.remote,
                   url: WEB_DESK_URL,
                 })
               "
@@ -129,7 +135,7 @@
               class="link"
               @click="
                 handleOpenExternal({
-                  windowId: appStore.windowId,
+                  windowId: WINDOW_ID_ENUM.remote,
                   url: COMMON_URL.privatizationDeployment,
                 })
               "
@@ -152,7 +158,7 @@
                 class="client-btn"
                 @click="
                   handleOpenExternal({
-                    windowId: appStore.windowId,
+                    windowId: WINDOW_ID_ENUM.remote,
                     url: item.url,
                   })
                 "
@@ -182,6 +188,10 @@
         </div>
       </div>
     </div>
+    <UrlModalCpt
+      @close="showUrlModalCpt = false"
+      v-if="showUrlModalCpt"
+    ></UrlModalCpt>
   </div>
 </template>
 
@@ -194,18 +204,26 @@ import {
   AUTHOR_INFO,
   AXIOS_BASEURL,
   COMMON_URL,
+  COTURN_URL,
   PRODUCT_NAME,
   WEB_DESK_URL,
   WEBSOCKET_URL,
+  WINDOW_ID_ENUM,
 } from '@/constant';
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
-import { prodDomain } from '@/spec-config';
 import { useAppStore } from '@/store/app';
 import { usePiniaCacheStore } from '@/store/cache';
+import {
+  getAxiosBaseUrl,
+  getCoturnUrl,
+  getWssUrl,
+} from '@/utils/localStorage/app';
+
+import UrlModalCpt from './urlModal.vue';
 
 const appStore = useAppStore();
 const cacheStore = usePiniaCacheStore();
-
+const showUrlModalCpt = ref(false);
 const { handleOpenExternal, handlesetAlwaysOnTop } = useIpcRendererSend();
 
 const clientList = ref<
@@ -225,7 +243,7 @@ watch(
   () => cacheStore.isAlwaysOnTop,
   () => {
     handlesetAlwaysOnTop({
-      windowId: appStore.windowId,
+      windowId: WINDOW_ID_ENUM.remote,
       flag: cacheStore.isAlwaysOnTop,
     });
   },
@@ -319,7 +337,13 @@ async function handleDeskVersionCheck() {
         color: #666;
         font-size: 14px;
         .v-item {
+          margin-bottom: 5px;
+
           .link {
+            cursor: pointer;
+          }
+          &.edit {
+            font-size: 13px;
             cursor: pointer;
           }
           &.one {
@@ -361,7 +385,6 @@ async function handleDeskVersionCheck() {
             }
           }
           &.two {
-            margin-top: 5px;
             .btn {
               margin-right: 10px;
               padding: 2px 10px;

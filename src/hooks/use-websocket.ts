@@ -46,6 +46,7 @@ import {
   WsUpdateJoinInfoType,
 } from '@/types/websocket';
 import { createNullVideo, handleUserMedia } from '@/utils';
+import { getWssUrl } from '@/utils/localStorage/app';
 import {
   WebSocketClass,
   prettierReceiveWsMsg,
@@ -808,7 +809,7 @@ export const useWebsocket = () => {
     }
     new WebSocketClass({
       roomId: roomId.value,
-      url: WEBSOCKET_URL,
+      url: getWssUrl() || WEBSOCKET_URL,
       isAnchor: data.isAnchor,
     });
     initReceive();

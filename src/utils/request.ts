@@ -4,6 +4,8 @@ import { AXIOS_BASEURL } from '@/constant';
 import { useUserStore } from '@/store/user';
 import { getToken } from '@/utils/localStorage/user';
 
+import { getAxiosBaseUrl } from './localStorage/app';
+
 export interface MyAxiosPromise<T = any>
   extends Promise<{
     code: number;
@@ -127,7 +129,7 @@ class MyAxios {
 }
 
 export default new MyAxios({
-  baseURL: AXIOS_BASEURL,
+  baseURL: getAxiosBaseUrl() || AXIOS_BASEURL,
   // baseURL: '/prodapi',
   timeout: 1000 * 5,
 });

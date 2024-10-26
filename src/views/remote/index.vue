@@ -220,9 +220,9 @@
         <span>窗口Id：</span>
         <span
           class="link"
-          @click="handleCopy(appStore.windowId)"
+          @click="handleCopy(WINDOW_ID_ENUM.remote)"
         >
-          {{ appStore.windowId }}
+          {{ WINDOW_ID_ENUM.remote }}
         </span>
         <span>，</span>
         <span>roomId：</span>
@@ -306,6 +306,7 @@ import {
 import {
   createNullVideo,
   handlConstraints,
+  ipcRendererInvoke,
   ipcRendererOn,
   ipcRendererSend,
   setAudioTrackContentHints,
@@ -388,16 +389,6 @@ const handleClickOutside: any = [
 ];
 
 watch(
-  () => appStore.windowId,
-  (newval) => {
-    if (newval !== -1) {
-      handleInitIpcRendererOn();
-      handleInitIpcRendererSend();
-    }
-  }
-);
-
-watch(
   () => networkStore.rtcMap,
   (newval) => {
     newval.forEach((item) => {
@@ -453,7 +444,7 @@ watch(
           }
         } else if (msgType === WsMsgTypeEnum.billdDeskBehavior) {
           const { data }: { data: WsBilldDeskBehaviorType['data'] } = jsondata;
-          handleRtcBilldDeskBehavior(appStore.windowId, data);
+          handleRtcBilldDeskBehavior(WINDOW_ID_ENUM.remote, data);
         }
       };
     });
@@ -482,10 +473,10 @@ watch(
   (newval) => {
     if (newval) {
       if (!isControlOther.value) {
-        handleMoveScreenRightBottom({ windowId: appStore.windowId });
+        handleMoveScreenRightBottom({ windowId: WINDOW_ID_ENUM.remote });
       }
       if (!anchorStream.value) {
-        handleScreen({ windowId: appStore.windowId });
+        handleScreen({ windowId: WINDOW_ID_ENUM.remote });
       }
     } else {
       handleCloseAll();
@@ -545,6 +536,8 @@ function handleLoopBilldDeskUpdateUserTimer() {
 }
 
 async function handleInit() {
+  handleInitIpcRendererOn();
+  handleInitIpcRendererSend();
   await initDeskUser();
   handleLoopBilldDeskUpdateUserTimer();
   initWs({
@@ -554,34 +547,39 @@ async function handleInit() {
   });
 }
 
-function handleInitIpcRendererSend() {
+async function handleInitIpcRendererSend() {
   ipcRendererSend({
-    windowId: appStore.windowId,
+    windowId: WINDOW_ID_ENUM.remote,
     channel: IPC_EVENT.workAreaSize,
     requestId: getRandomString(8),
     data: {},
   });
 
-  ipcRendererSend({
-    windowId: appStore.windowId,
+  const res = await ipcRendererInvoke({
+    windowId: WINDOW_ID_ENUM.remote,
     channel: IPC_EVENT.getPrimaryDisplaySize,
     requestId: getRandomString(8),
     data: {},
   });
 
-  ipcRendererSend({
-    windowId: appStore.windowId,
+  if (res.code === 0) {
+    appStore.primaryDisplaySize.width = res.data.width;
+    appStore.primaryDisplaySize.height = res.data.height;
+  }
+
+  const res1 = await ipcRendererInvoke({
+    windowId: WINDOW_ID_ENUM.remote,
     channel: IPC_EVENT.scaleFactor,
     requestId: getRandomString(8),
     data: {},
   });
-}
-
-function responseScaleFactor(_event, data: IIpcRendererData) {
-  if (data.data.platform !== 'darwin') {
-    appStore.scaleFactor = data.data.scaleFactor;
+  if (res1.code === 0) {
+    if (res1.data.platform !== 'darwin') {
+      appStore.scaleFactor = res1.data.scaleFactor;
+    }
   }
 }
+
 function responsePowerMonitorSuspend(_event, data: IIpcRendererData) {
   console.log('response_powerMonitorSuspend', data);
   suspend.value = `${new Date().toLocaleString()}-powerMonitorSuspend`;
@@ -600,12 +598,7 @@ function responseWorkAreaSize(_event, data: IIpcRendererData) {
     height: data.data.height,
   };
 }
-function responseGetPrimaryDisplaySize(_event, data: IIpcRendererData) {
-  appStore.workAreaSize = {
-    width: data.data.width,
-    height: data.data.height,
-  };
-}
+
 function responseGetScreenStream(_event, data: IIpcRendererData) {
   if (data.code !== 0) {
     window.$message.error(data.msg || '');
@@ -616,8 +609,6 @@ function responseGetScreenStream(_event, data: IIpcRendererData) {
 }
 
 function handleInitIpcRendererOn() {
-  ipcRendererOn(IPC_EVENT.response_scaleFactor, responseScaleFactor);
-
   ipcRendererOn(
     IPC_EVENT.response_powerMonitorSuspend,
     responsePowerMonitorSuspend
@@ -634,11 +625,6 @@ function handleInitIpcRendererOn() {
   );
 
   ipcRendererOn(IPC_EVENT.response_workAreaSize, responseWorkAreaSize);
-
-  ipcRendererOn(
-    IPC_EVENT.response_getPrimaryDisplaySize,
-    responseGetPrimaryDisplaySize
-  );
 
   ipcRendererOn(IPC_EVENT.response_getScreenStream, responseGetScreenStream);
 }
@@ -898,10 +884,10 @@ async function startRemote() {
     window.$message.warning('请输入远程设备代码！');
     return;
   }
-  if (cacheStore.remoteDeskUserUuid === cacheStore.deskUserUuid) {
-    window.$message.warning('不能连接自己！');
-    return;
-  }
+  // if (cacheStore.remoteDeskUserUuid === cacheStore.deskUserUuid) {
+  //   window.$message.warning('不能连接自己！');
+  //   return;
+  // }
   try {
     loading.value = true;
     const res = await fetchFindReceiverByUuid(cacheStore.remoteDeskUserUuid);

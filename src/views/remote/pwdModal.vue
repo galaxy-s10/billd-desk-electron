@@ -119,8 +119,8 @@ function handleConfirm() {
     }
     .err-msg {
       color: red;
+      height: 26px;
       margin-top: 10px;
-      margin-bottom: 10px;
     }
     .ipt-wrap {
       position: relative;

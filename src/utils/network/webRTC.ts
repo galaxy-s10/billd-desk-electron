@@ -1,10 +1,12 @@
 import { getRandomString } from 'billd-utils';
 
+import { COTURN_URL } from '@/constant';
 import { LiveLineEnum, MediaTypeEnum } from '@/interface';
-import { prodDomain } from '@/spec-config';
 import { AppRootState, useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
 import { WsCandidateType, WsMsgTypeEnum } from '@/types/websocket';
+
+import { getCoturnUrl } from '../localStorage/app';
 
 export class WebRTCClass {
   roomId = '';
@@ -535,7 +537,7 @@ export class WebRTCClass {
             //   urls: 'stun:stun.l.google.com:19302',
             // },
             {
-              urls: `turn:hk.${prodDomain}`,
+              urls: getCoturnUrl() || COTURN_URL,
               username: 'hss',
               credential: '123456',
             },
