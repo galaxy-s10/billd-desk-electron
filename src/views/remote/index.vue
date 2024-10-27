@@ -474,10 +474,10 @@ watch(
   (newval) => {
     newval.forEach((item) => {
       if (item.isClose) {
-        window.$notification.warning({
-          content: `${item.sender}远程连接断开`,
-          duration: 2000,
-        });
+        // window.$notification.warning({
+        //   content: `${item.sender}远程连接断开`,
+        //   duration: 2000,
+        // });
         appStore.remoteDesk.delete(item.sender);
         return;
       }
@@ -889,10 +889,10 @@ async function startRemote() {
     window.$message.warning('请输入远程设备代码！');
     return;
   }
-  // if (cacheStore.remoteDeskUserUuid === cacheStore.deskUserUuid) {
-  //   window.$message.warning('不能连接自己！');
-  //   return;
-  // }
+  if (cacheStore.remoteDeskUserUuid === cacheStore.deskUserUuid) {
+    window.$message.warning('不能连接自己！');
+    return;
+  }
   try {
     loading.value = true;
     const res = await fetchFindReceiverByUuid(cacheStore.remoteDeskUserUuid);

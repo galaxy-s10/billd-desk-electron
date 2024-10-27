@@ -294,7 +294,7 @@ watch(
 
 function jumpToDownload({ windowId, url }) {
   if (!url || url === '') {
-    window.$message.error('敬请期待！');
+    window.$message.info('敬请期待！');
     return;
   }
   handleOpenExternal({
