@@ -355,8 +355,6 @@ const mySocketId = computed(() => {
 });
 
 onUnmounted(() => {
-  networkStore.removeAllWsAndRtc();
-  handleCloseAll();
   clearInterval(loopBilldDeskUpdateUserTimer.value);
 });
 
