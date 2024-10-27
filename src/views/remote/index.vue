@@ -829,22 +829,25 @@ async function handleConfirm(pwd: string) {
             },
           });
         } else {
-          router.push({
-            name: routerName.webrtc,
-            query: {
-              roomId: cacheStore.remoteDeskUserUuid,
-              deskUserUuid: cacheStore.deskUserUuid,
-              deskUserPassword: cacheStore.deskUserPassword,
-              remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
-              remoteDeskUserPassword: pwd,
-              receiverId: receiverId.value,
-              maxBitrate: currentMaxBitrate.value,
-              maxFramerate: currentMaxFramerate.value,
-              resolutionRatio: currentResolutionRatio.value,
-              audioContentHint: currentAudioContentHint.value,
-              videoContentHint: currentVideoContentHint.value,
-            },
-          });
+          networkStore.removeAllWsAndRtc();
+          setTimeout(() => {
+            router.push({
+              name: routerName.webrtc,
+              query: {
+                roomId: cacheStore.remoteDeskUserUuid,
+                deskUserUuid: cacheStore.deskUserUuid,
+                deskUserPassword: cacheStore.deskUserPassword,
+                remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
+                remoteDeskUserPassword: pwd,
+                receiverId: receiverId.value,
+                maxBitrate: currentMaxBitrate.value,
+                maxFramerate: currentMaxFramerate.value,
+                resolutionRatio: currentResolutionRatio.value,
+                audioContentHint: currentAudioContentHint.value,
+                videoContentHint: currentVideoContentHint.value,
+              },
+            });
+          }, 300);
         }
 
         const flag = cacheStore.linkDeviceList.find(

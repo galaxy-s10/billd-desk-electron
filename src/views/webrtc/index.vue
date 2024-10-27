@@ -765,6 +765,9 @@ function handleClose() {
   networkStore.removeAllWsAndRtc();
   if (!ipcRenderer) {
     router.push({ name: routerName.remote });
+    setTimeout(() => {
+      windowReload();
+    }, 300);
   }
 }
 
