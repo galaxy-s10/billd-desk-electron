@@ -2,7 +2,8 @@
   <div class="layout">
     <div
       v-if="useCustomBar"
-      class="system-bar no-drag"
+      class="system-bar"
+      :class="{ 'no-drag': !isMac, drag: isMac }"
       @mousedown="startMove"
       @mouseup="endMove"
       @mousemove="moving"
@@ -56,10 +57,7 @@
         </div>
       </div>
     </div>
-    <div
-      class="view"
-      :class="{ mac: !useCustomBar }"
-    >
+    <div class="view">
       <RouterView></RouterView>
     </div>
     <div
@@ -104,7 +102,7 @@
 
 <script lang="ts" setup>
 import { getRandomString, windowReload } from 'billd-utils';
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { WINDOW_ID_ENUM } from '@/constant';
@@ -113,7 +111,12 @@ import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { IIpcRendererData } from '@/interface';
 import { routerName } from '@/router';
 import { useAppStore } from '@/store/app';
-import { ipcRendererInvoke, ipcRendererOn, ipcRendererSend } from '@/utils';
+import {
+  ipcRenderer,
+  ipcRendererInvoke,
+  ipcRendererOn,
+  ipcRendererSend,
+} from '@/utils';
 
 const appStore = useAppStore();
 const router = useRouter();
@@ -125,7 +128,29 @@ const { handleOpenDevTools } = useIpcRendererSend();
 const isMoving = ref<boolean>(false);
 const lastPoint = reactive({ x: 0, y: 0 });
 const useCustomBar = ref(true);
+const isMac = ref(false);
 const clickNum = ref(1);
+
+onMounted(() => {
+  if (!ipcRenderer) {
+    useCustomBar.value = false;
+  }
+  init();
+});
+
+async function init() {
+  const res = await ipcRendererInvoke({
+    windowId: WINDOW_ID_ENUM.remote,
+    channel: IPC_EVENT.getPlatform,
+    requestId: getRandomString(8),
+    data: {},
+  });
+  if (res?.code === 0) {
+    if (res?.data?.platform === 'darwin') {
+      isMac.value = true;
+    }
+  }
+}
 
 ipcRendererOn(
   IPC_EVENT.response_open_about,
@@ -199,22 +224,34 @@ function handleMin() {
 }
 
 const startMove = (e: MouseEvent) => {
+  if (isMac.value) {
+    return;
+  }
   isMoving.value = true;
   lastPoint.x = e.clientX;
   lastPoint.y = e.clientY;
 };
 
 const endMove = () => {
+  if (isMac.value) {
+    return;
+  }
   isMoving.value = false;
 };
 
 const handleMouseleave = () => {
+  if (isMac.value) {
+    return;
+  }
   isMoving.value = false;
 };
 
-const moving = async (e: MouseEvent) => {
+const moving = (e: MouseEvent) => {
+  if (isMac.value) {
+    return;
+  }
   if (isMoving.value) {
-    await ipcRendererInvoke({
+    ipcRendererInvoke({
       windowId: WINDOW_ID_ENUM.remote,
       channel: IPC_EVENT.setWindowPosition,
       requestId: getRandomString(8),
@@ -242,6 +279,12 @@ $sidebar-width: 160px;
     box-sizing: border-box;
     width: 100vw;
     height: $top-system-bar-height;
+    &.drag {
+      -webkit-app-region: drag;
+    }
+    &.no-drag {
+      -webkit-app-region: no-drag;
+    }
 
     user-select: none;
     .top-left {
@@ -254,12 +297,6 @@ $sidebar-width: 160px;
       .left {
         display: flex;
         align-items: center;
-        .drag {
-          -webkit-app-region: drag;
-        }
-        .no-drag {
-          -webkit-app-region: no-drag;
-        }
 
         .ico {
           display: flex;

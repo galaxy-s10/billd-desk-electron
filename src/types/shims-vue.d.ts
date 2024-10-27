@@ -1,5 +1,3 @@
-import { ElectronAPI } from '@electron-toolkit/preload';
-
 declare module '*.vue' {
   /* eslint-disable */
   import type { DefineComponent } from 'vue';
@@ -7,14 +5,14 @@ declare module '*.vue' {
   export default component;
 }
 
-declare global {
-  interface Window {
-    electronAPI: ElectronAPI;
-    $message: import('naive-ui/es/message/src/MessageProvider').MessageApiInjection;
-    $notification: import('naive-ui/es/notification/index').NotificationProviderInst;
-    // $notification: import('naive-ui/es/notification/index').NotificationApiInjection;
-    TXLivePusher: any;
-  }
+// declare global {
+interface Window {
+  electronAPI: any;
+  $message: import('naive-ui/es/message/src/MessageProvider').MessageApiInjection;
+  $notification: import('naive-ui/es/notification/index').NotificationProviderInst;
+  // $notification: import('naive-ui/es/notification/index').NotificationApiInjection;
+  TXLivePusher: any;
 }
+// }
 
 // interface Window {}

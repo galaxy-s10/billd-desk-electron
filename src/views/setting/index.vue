@@ -2,27 +2,30 @@
   <div class="setting-wrap">
     <div class="nav"></div>
     <div class="container">
-      <div class="item">
-        <div class="label">界面设置</div>
-        <div class="value">
-          <n-space>
-            <div>主窗口置顶：</div>
-            <n-radio
-              :checked="cacheStore.isAlwaysOnTop"
-              @change="cacheStore.isAlwaysOnTop = true"
-            >
-              是
-            </n-radio>
-            <n-radio
-              :checked="!cacheStore.isAlwaysOnTop"
-              @change="cacheStore.isAlwaysOnTop = false"
-            >
-              否
-            </n-radio>
-          </n-space>
+      <template v-if="ipcRenderer">
+        <div class="item">
+          <div class="label">界面设置</div>
+          <div class="value">
+            <n-space>
+              <div>主窗口置顶：</div>
+              <n-radio
+                :checked="cacheStore.isAlwaysOnTop"
+                @change="cacheStore.isAlwaysOnTop = true"
+              >
+                是
+              </n-radio>
+              <n-radio
+                :checked="!cacheStore.isAlwaysOnTop"
+                @change="cacheStore.isAlwaysOnTop = false"
+              >
+                否
+              </n-radio>
+            </n-space>
+          </div>
         </div>
-      </div>
-      <div class="hr"></div>
+        <div class="hr"></div>
+      </template>
+
       <div class="item">
         <div class="label">接口配置</div>
         <div class="value">
@@ -179,6 +182,7 @@
               当前版本：v{{ appStore.version }}（{{ appStore.lastBuildDate }}）
             </span>
             <span
+              v-if="ipcRenderer"
               class="btn"
               @click="handleDeskVersionCheck"
             >
@@ -213,6 +217,7 @@ import {
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { useAppStore } from '@/store/app';
 import { usePiniaCacheStore } from '@/store/cache';
+import { ipcRenderer } from '@/utils';
 import {
   getAxiosBaseUrl,
   getCoturnUrl,

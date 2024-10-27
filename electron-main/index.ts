@@ -1,11 +1,10 @@
-// import path from 'path';
+import path from 'path';
 import { platform } from 'process';
 
 import {
   app,
   BrowserWindow,
   desktopCapturer,
-  globalShortcut,
   ipcMain,
   Menu,
   powerMonitor,
@@ -14,13 +13,11 @@ import {
   shell,
 } from 'electron';
 
-import { GLOBAL_SHORTCUT, IPC_EVENT } from '../src/event';
+import { IPC_EVENT } from '../src/event';
 import { WINDOW_ID_ENUM } from '../src/pure-constant';
 import { IIpcRendererData } from '../src/pure-interface';
 
 import { nutjsTs } from './types';
-
-const path = require('path');
 
 const nutjs: nutjsTs = require('@nut-tree-fork/nut-js');
 
@@ -159,27 +156,6 @@ function winWebContentsSend(data: IIpcRendererData) {
   }
 }
 
-function handleInitGlobalShortcut() {
-  Object.keys(GLOBAL_SHORTCUT).forEach((item) => {
-    // 注册全局快捷键
-    const ret = globalShortcut.register(GLOBAL_SHORTCUT[item], () => {
-      // 在这里处理组合键事件
-      console.log('组合键被按下！', GLOBAL_SHORTCUT[item]);
-      winWebContentsSend({
-        windowId: 0,
-        channel: IPC_EVENT.response_globalShortcut,
-        requestId: '',
-        data: { key: GLOBAL_SHORTCUT[item] },
-      });
-    });
-    if (!ret) {
-      console.log('注册组合键失败！', GLOBAL_SHORTCUT[item]);
-    } else {
-      console.log('注册组合键成功！', GLOBAL_SHORTCUT[item]);
-    }
-  });
-}
-
 function handleUrlQuery(obj: Record<string, string>) {
   let res = '';
   Object.keys(obj).forEach((item) => {
@@ -198,6 +174,8 @@ function main() {
     height: windowNormalParams.height,
     minWidth: windowNormalParams.width,
     minHeight: windowNormalParams.height,
+    maxWidth: windowNormalParams.width,
+    maxHeight: windowNormalParams.height,
     // 隐藏菜单栏
     autoHideMenuBar: true,
     webPreferences: {
@@ -313,7 +291,17 @@ function main() {
 
   winBounds = mainWindow.getBounds();
 
-  handleInitGlobalShortcut();
+  ipcMain.handle(IPC_EVENT.getPlatform, (_event, reqData: IIpcRendererData) => {
+    console.log(`electron收到${IPC_EVENT.getPlatform}`, reqData);
+    const { requestId } = reqData;
+    const res = {
+      requestId,
+      data: { platform },
+      code: 0,
+    };
+
+    return res;
+  });
 
   ipcMain.handle(
     IPC_EVENT.shellOpenExternal,
@@ -695,6 +683,7 @@ function main() {
     }
   });
 
+  // 输入字符串或按键
   ipcMain.on(
     IPC_EVENT.keyboardType,
     async (_event, reqData: IIpcRendererData) => {
@@ -726,6 +715,7 @@ function main() {
     }
   );
 
+  // 输入按键
   ipcMain.on(
     IPC_EVENT.keyboardPressKey,
     async (_event, reqData: IIpcRendererData) => {
@@ -735,7 +725,7 @@ function main() {
       const win = windowMap.get(windowId);
       if (win) {
         try {
-          await nutjs.keyboard.pressKey(key);
+          await nutjs.keyboard.pressKey(...key);
           winWebContentsSend({
             windowId,
             channel: IPC_EVENT.response_keyboardPressKey,
@@ -757,6 +747,7 @@ function main() {
     }
   );
 
+  // 释放按键
   ipcMain.on(
     IPC_EVENT.keyboardReleaseKey,
     async (_event, reqData: IIpcRendererData) => {
@@ -766,7 +757,7 @@ function main() {
       const win = windowMap.get(windowId);
       if (win) {
         try {
-          await nutjs.keyboard.releaseKey(key);
+          await nutjs.keyboard.releaseKey(...key);
           winWebContentsSend({
             windowId,
             channel: IPC_EVENT.response_keyboardReleaseKey,

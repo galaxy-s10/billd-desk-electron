@@ -16,11 +16,26 @@
         class="info"
         :class="{ show: showDetail }"
       >
-        <div class="debug-info">
+        <div
+          class="debug-area"
+          @click="handleOpenDebug"
+        ></div>
+        <div
+          class="debug-info"
+          v-if="appStore.showDebug"
+        >
           <div>
-            <span @click="windowReload">刷新</span>
+            <span
+              class="item"
+              @click="windowReload"
+              >刷新</span
+            >
             <span>，</span>
-            <span @click="handleOpenDevTools({ windowId })">控制台</span>
+            <span
+              class="item"
+              @click="handleOpenDevTools({ windowId })"
+              >控制台</span
+            >
           </div>
 
           <div>
@@ -57,13 +72,13 @@
               <div class="link-label">模式：</div>
               <n-radio
                 :checked="!isWatchMode"
-                @change="isWatchMode = !isWatchMode"
+                @change="isWatchMode = false"
               >
                 控制模式
               </n-radio>
               <n-radio
                 :checked="isWatchMode"
-                @change="isWatchMode = !isWatchMode"
+                @change="isWatchMode = true"
               >
                 观看模式
               </n-radio>
@@ -74,13 +89,13 @@
               <div class="link-label">鼠标：</div>
               <n-radio
                 :checked="showCursor"
-                @change="showCursor = !showCursor"
+                @change="showCursor = true"
               >
                 显示
               </n-radio>
               <n-radio
                 :checked="!showCursor"
-                @change="showCursor = !showCursor"
+                @change="showCursor = false"
               >
                 隐藏
               </n-radio>
@@ -156,45 +171,50 @@
               </n-radio-group>
             </n-space>
           </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">分辨率：</div>
+              <div class="item">
+                {{ videoSettings?.width + 'x' + videoSettings?.height }}
+              </div>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">帧率：</div>
+              <div class="item">
+                {{ videoSettings?.frameRate?.toFixed(2) }}
+              </div>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">延迟：</div>
+              <div class="item">
+                {{ rtcRtt }}
+              </div>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">丢包：</div>
+              <div class="item">
+                {{ rtcLoss }}
+              </div>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label"></div>
+              <div
+                class="item btn"
+                @click="handleClose"
+              >
+                关闭连接
+              </div>
+            </n-space>
+          </div>
         </div>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>分辨率</n-input-group-label>
-            <n-input
-              :value="videoSettings?.width + 'x' + videoSettings?.height"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>帧率</n-input-group-label>
-            <n-input
-              :value="videoSettings?.frameRate?.toFixed(2)"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-        </n-space>
-
-        <n-space>
-          <n-input-group>
-            <n-input-group-label>延迟</n-input-group-label>
-            <n-input
-              :value="rtcRtt"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-          <n-input-group>
-            <n-input-group-label>丢包</n-input-group-label>
-            <n-input
-              :value="rtcLoss"
-              disabled
-              placeholder=""
-            />
-          </n-input-group>
-        </n-space>
       </div>
     </div>
 
@@ -229,12 +249,13 @@ import {
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { NUT_KEY_MAP, WINDOW_ID_ENUM } from '@/constant';
+import { ENGLISH_LETTER, NUT_KEY_MAP, WINDOW_ID_ENUM } from '@/constant';
 import { IPC_EVENT } from '@/event';
 import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
 import { useRTCParams } from '@/hooks/use-rtcParams';
 import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
+import router, { routerName } from '@/router';
 import { useAppStore } from '@/store/app';
 import { useNetworkStore } from '@/store/network';
 import {
@@ -250,7 +271,12 @@ import {
   WsConnectStatusEnum,
   WsMsgTypeEnum,
 } from '@/types/websocket';
-import { ipcRendererInvoke, ipcRendererSend, videoFullBox } from '@/utils';
+import {
+  ipcRenderer,
+  ipcRendererInvoke,
+  ipcRendererSend,
+  videoFullBox,
+} from '@/utils';
 
 const route = useRoute();
 const appStore = useAppStore();
@@ -319,6 +345,7 @@ const rtcLoss = computed(() => {
   return arr.join();
 });
 
+const clickNum = ref(0);
 const loopGetSettingsTimer = ref();
 const loopReconnectTimer = ref();
 const videoSettings = ref<MediaTrackSettings>();
@@ -368,8 +395,8 @@ onMounted(() => {
   if (route.query.audioContentHint !== undefined) {
     currentAudioContentHint.value = String(route.query.audioContentHint);
   }
-  window.addEventListener('resize', handleResize);
   init();
+  window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
@@ -377,14 +404,87 @@ onUnmounted(() => {
   videoWrapRef.value?.removeEventListener('wheel', handleMouseWheel);
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeyDown);
+  window.removeEventListener('keydown', handleKeyCombination);
+
   window.removeEventListener('keyup', handleKeyUp);
   networkStore.removeAllWsAndRtc();
-  handleClose();
 });
+
+function handleOpenDebug() {
+  if (clickNum.value < 5) {
+    clickNum.value += 1;
+    setTimeout(() => {
+      clickNum.value = 1;
+    }, 3000);
+  } else {
+    appStore.showDebug = true;
+  }
+}
+
+function handleKeyCombination(event: KeyboardEvent) {
+  if (isWatchMode.value) return;
+  if (event.ctrlKey) {
+    const key = event.key.toLowerCase();
+    ENGLISH_LETTER.forEach((item) => {
+      if (item === key) {
+        console.log(`Ctrl+${key} 被按下`);
+        networkStore.rtcMap
+          .get(receiverId.value)
+          ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+            requestId: getRandomString(8),
+            msgType: WsMsgTypeEnum.billdDeskBehavior,
+            data: {
+              roomId: roomId.value,
+              sender: mySocketId.value,
+              receiver: receiverId.value,
+              type: BilldDeskBehaviorEnum.keyboardPressKey,
+              key: [
+                NUT_KEY_MAP.ControlLeft,
+                NUT_KEY_MAP[event.code] ||
+                  NUT_KEY_MAP[event.key.toUpperCase()] ||
+                  event.key,
+              ],
+              x: 0,
+              y: 0,
+              amount: 0,
+            },
+          });
+      }
+    });
+  }
+  if (event.metaKey) {
+    const key = event.key.toLowerCase();
+    ENGLISH_LETTER.forEach((item) => {
+      if (item === key) {
+        console.log(`MetaKey+${key} 被按下`);
+        networkStore.rtcMap
+          .get(receiverId.value)
+          ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
+            requestId: getRandomString(8),
+            msgType: WsMsgTypeEnum.billdDeskBehavior,
+            data: {
+              roomId: roomId.value,
+              sender: mySocketId.value,
+              receiver: receiverId.value,
+              type: BilldDeskBehaviorEnum.keyboardPressKey,
+              key: [
+                NUT_KEY_MAP.MetaLeft,
+                NUT_KEY_MAP[event.code] ||
+                  NUT_KEY_MAP[event.key.toUpperCase()] ||
+                  event.key,
+              ],
+              x: 0,
+              y: 0,
+              amount: 0,
+            },
+          });
+      }
+    });
+  }
+}
 
 function handleResize() {
   videoList.value.forEach((item) => {
-    console.log(item);
     handleVideoElSize(item, false);
   });
 }
@@ -395,6 +495,7 @@ function init() {
   handleLoopBilldDeskUpdateUserTimer();
   videoWrapRef.value?.addEventListener('wheel', handleMouseWheel);
   window.addEventListener('keydown', handleKeyDown);
+  window.addEventListener('keydown', handleKeyCombination);
   window.addEventListener('keyup', handleKeyUp);
   initWs({
     roomId: roomId.value,
@@ -535,6 +636,8 @@ function handleWsMsg() {
         if (data.data) {
           receiverId.value = data.data.receiver;
           appStore.remoteDesk.set(data.data.receiver, {
+            deskUserUuid: data.data.deskUserUuid,
+            remoteDeskUserUuid: data.data.remoteDeskUserUuid,
             audioContentHint: data.data.audioContentHint,
             videoContentHint: data.data.videoContentHint,
             sender: data.data.sender,
@@ -567,7 +670,7 @@ function handleWsMsg() {
   });
 }
 
-async function handleInitIpcRendererSend() {}
+function handleInitIpcRendererSend() {}
 
 function handleInitIpcRendererOn() {}
 
@@ -583,10 +686,10 @@ function loopGetSettings() {
   }, 1000);
 }
 
-function handleMouseWheel(e: WheelEvent) {
+function handleMouseWheel(event: WheelEvent) {
   if (isWatchMode.value) return;
-  e.preventDefault();
-  if (e.deltaY > 0) {
+  event.preventDefault();
+  if (event.deltaY > 0) {
     networkStore.rtcMap
       .get(receiverId.value)
       ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -597,13 +700,13 @@ function handleMouseWheel(e: WheelEvent) {
           sender: mySocketId.value,
           receiver: receiverId.value,
           type: BilldDeskBehaviorEnum.scrollDown,
-          keyboardtype: 0,
+          key: [0],
           x: 0,
           y: 0,
-          amount: Math.abs(e.deltaY),
+          amount: Math.abs(event.deltaY),
         },
       });
-  } else if (e.deltaY < 0) {
+  } else if (event.deltaY < 0) {
     networkStore.rtcMap
       .get(receiverId.value)
       ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -614,14 +717,14 @@ function handleMouseWheel(e: WheelEvent) {
           sender: mySocketId.value,
           receiver: receiverId.value,
           type: BilldDeskBehaviorEnum.scrollUp,
-          keyboardtype: 0,
+          key: [0],
           x: 0,
           y: 0,
-          amount: Math.abs(e.deltaY),
+          amount: Math.abs(event.deltaY),
         },
       });
   }
-  if (e.deltaX > 0) {
+  if (event.deltaX > 0) {
     networkStore.rtcMap
       .get(receiverId.value)
       ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -632,13 +735,13 @@ function handleMouseWheel(e: WheelEvent) {
           sender: mySocketId.value,
           receiver: receiverId.value,
           type: BilldDeskBehaviorEnum.scrollRight,
-          keyboardtype: 0,
+          key: [0],
           x: 0,
           y: 0,
-          amount: Math.abs(e.deltaX),
+          amount: Math.abs(event.deltaX),
         },
       });
-  } else if (e.deltaX < 0) {
+  } else if (event.deltaX < 0) {
     networkStore.rtcMap
       .get(receiverId.value)
       ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -649,10 +752,10 @@ function handleMouseWheel(e: WheelEvent) {
           sender: mySocketId.value,
           receiver: receiverId.value,
           type: BilldDeskBehaviorEnum.scrollLeft,
-          keyboardtype: 0,
+          key: [0],
           x: 0,
           y: 0,
-          amount: Math.abs(e.deltaX),
+          amount: Math.abs(event.deltaX),
         },
       });
   }
@@ -660,6 +763,9 @@ function handleMouseWheel(e: WheelEvent) {
 
 function handleClose() {
   networkStore.removeAllWsAndRtc();
+  if (!ipcRenderer) {
+    router.push({ name: routerName.remote });
+  }
 }
 
 function handleVideoElSize(videoEl, setWindowBounds = false) {
@@ -698,7 +804,7 @@ watch(
   () => appStore.remoteDesk.size,
   (newval) => {
     if (!newval) {
-      handleClose();
+      networkStore.removeAllWsAndRtc();
     }
   }
 );
@@ -728,6 +834,7 @@ watch(
           }
           handleVideoElSize(item.videoEl, true);
         });
+        videoList.value.push(item.videoEl);
         videoWrapRef.value.appendChild(item.videoEl);
       }
     });
@@ -752,8 +859,11 @@ function handleCopy(str) {
   window.$message.success('复制成功');
 }
 
-function handleKeyDown(e: KeyboardEvent) {
+function handleKeyDown(event: KeyboardEvent) {
   if (isWatchMode.value) return;
+  if (event.ctrlKey || event.metaKey) {
+    return;
+  }
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -764,8 +874,11 @@ function handleKeyDown(e: KeyboardEvent) {
         sender: mySocketId.value,
         receiver: receiverId.value,
         type: BilldDeskBehaviorEnum.keyboardPressKey,
-        keyboardtype:
-          NUT_KEY_MAP[e.code] || NUT_KEY_MAP[e.key.toUpperCase()] || e.key,
+        key: [
+          NUT_KEY_MAP[event.code] ||
+            NUT_KEY_MAP[event.key.toUpperCase()] ||
+            event.key,
+        ],
         x: 0,
         y: 0,
         amount: 0,
@@ -773,8 +886,11 @@ function handleKeyDown(e: KeyboardEvent) {
     });
 }
 
-function handleKeyUp(e: KeyboardEvent) {
+function handleKeyUp(event: KeyboardEvent) {
   if (isWatchMode.value) return;
+  if (event.ctrlKey || event.metaKey) {
+    return;
+  }
   networkStore.rtcMap
     .get(receiverId.value)
     ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
@@ -785,8 +901,11 @@ function handleKeyUp(e: KeyboardEvent) {
         sender: mySocketId.value,
         receiver: receiverId.value,
         type: BilldDeskBehaviorEnum.keyboardReleaseKey,
-        keyboardtype:
-          NUT_KEY_MAP[e.code] || NUT_KEY_MAP[e.key.toUpperCase()] || e.key,
+        key: [
+          NUT_KEY_MAP[event.code] ||
+            NUT_KEY_MAP[event.key.toUpperCase()] ||
+            event.key,
+        ],
         x: 0,
         y: 0,
         amount: 0,
@@ -805,7 +924,7 @@ function handleDoublelclick() {
         sender: mySocketId.value,
         receiver: receiverId.value,
         type: BilldDeskBehaviorEnum.doubleClick,
-        keyboardtype: 0,
+        key: [0],
         x: 0,
         y: 0,
         amount: 0,
@@ -824,7 +943,7 @@ function handleContextmenu() {
         sender: mySocketId.value,
         receiver: receiverId.value,
         type: BilldDeskBehaviorEnum.rightClick,
-        keyboardtype: 0,
+        key: [0],
         x: 0,
         y: 0,
         amount: 0,
@@ -864,7 +983,7 @@ function handleMouseDown(event: MouseEvent) {
         roomId: roomId.value,
         sender: mySocketId.value,
         receiver: receiverId.value,
-        keyboardtype: 0,
+        key: [0],
         type: BilldDeskBehaviorEnum.pressButtonLeft,
         x,
         y,
@@ -905,7 +1024,7 @@ function handleMouseMove(event: MouseEvent) {
         sender: mySocketId.value,
         receiver: receiverId.value,
         type: BilldDeskBehaviorEnum.mouseMove,
-        keyboardtype: 0,
+        key: [0],
         x,
         y,
         amount: 0,
@@ -943,7 +1062,7 @@ function handleMouseUp(event: MouseEvent) {
         roomId: roomId.value,
         sender: mySocketId.value,
         receiver: receiverId.value,
-        keyboardtype: 0,
+        key: [0],
         type: isLongClick
           ? BilldDeskBehaviorEnum.releaseButtonLeft
           : BilldDeskBehaviorEnum.releaseButtonLeft,
@@ -979,6 +1098,7 @@ function handleMouseUp(event: MouseEvent) {
 
       user-select: none;
     }
+
     .info {
       position: absolute;
       top: 100%;
@@ -989,12 +1109,23 @@ function handleMouseUp(event: MouseEvent) {
       width: 800px;
       background-color: white;
       box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+      .debug-area {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 30px;
+        height: 30px;
+      }
       .debug-info {
         position: absolute;
         right: 0;
         bottom: 0;
+        z-index: 99;
         padding-right: 5px;
         font-size: 12px;
+        .item {
+          cursor: pointer;
+        }
         .link {
           color: red;
           cursor: pointer;
@@ -1010,6 +1141,14 @@ function handleMouseUp(event: MouseEvent) {
             width: 80px;
             text-align: right;
           }
+          .btn {
+            padding: 2px 10px;
+            border-radius: 5px;
+            background-color: red;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+          }
         }
       }
       &.show {
@@ -1018,8 +1157,8 @@ function handleMouseUp(event: MouseEvent) {
     }
   }
   .remote-video {
-    width: 100vw;
-    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
     line-height: 0;
     &.hide-cursor {
       cursor: none;

@@ -8,15 +8,16 @@
 import { GlobalThemeOverrides, NConfigProvider } from 'naive-ui';
 import { onMounted } from 'vue';
 
-import { APP_BUILD_INFO, WINDOW_ID_ENUM } from '@/constant';
-import { useAppStore } from '@/store/app';
-
 import {
   fetchDeskVersionByVersion,
   fetchDeskVersionCheck,
-} from './api/deskVersion';
-import { useIpcRendererSend } from './hooks/use-ipcRendererSend';
-import { usePiniaCacheStore } from './store/cache';
+  fetchDeskVersionLatest,
+} from '@/api/deskVersion';
+import { APP_BUILD_INFO, WINDOW_ID_ENUM } from '@/constant';
+import { useIpcRendererSend } from '@/hooks/use-ipcRendererSend';
+import { useAppStore } from '@/store/app';
+import { usePiniaCacheStore } from '@/store/cache';
+import { ipcRenderer } from '@/utils';
 
 const appStore = useAppStore();
 const cacheStore = usePiniaCacheStore();
@@ -38,7 +39,9 @@ onMounted(() => {
     flag: cacheStore.isAlwaysOnTop,
   });
   getClient();
-  handleDeskVersionCheck();
+  if (ipcRenderer) {
+    handleDeskVersionCheck();
+  }
 });
 
 async function handleDeskVersionCheck() {
@@ -49,7 +52,12 @@ async function handleDeskVersionCheck() {
 }
 
 async function getClient() {
-  const res = await fetchDeskVersionByVersion(appStore.version);
+  let res;
+  if (ipcRenderer) {
+    res = await fetchDeskVersionByVersion(appStore.version);
+  } else {
+    res = await fetchDeskVersionLatest();
+  }
   if (res.code === 200 && res.data) {
     appStore.deskVersionInfo = res.data;
   }

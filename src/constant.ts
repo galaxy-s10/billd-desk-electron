@@ -141,9 +141,11 @@ export const NUT_KEY_MAP = {
   ControlLeft: Key.LeftControl,
   ControlRight: Key.RightControl,
   MetaLeft: Key.LeftCmd,
-  LeftWin: Key.LeftCmd,
+  LeftCmd: Key.LeftCmd,
   MetaRight: Key.RightCmd,
-  RightWin: Key.RightCmd,
+  RightCmd: Key.RightCmd,
+  LeftWin: Key.LeftWin,
+  RightWin: Key.RightWin,
 };
 
 export const SRS_CB_URL_PARAMS = {

@@ -106,102 +106,92 @@
         </div>
       </div>
 
+      <template v-if="!appStore.remoteDesk.size">
+        <div class="tip">已准备好连接</div>
+        <div class="link-config">
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">码率：</div>
+              <n-radio-group v-model:value="currentMaxBitrate">
+                <n-radio
+                  v-for="item in maxBitrate"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">帧率：</div>
+              <n-radio-group v-model:value="currentMaxFramerate">
+                <n-radio
+                  v-for="item in maxFramerate"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">分辨率：</div>
+              <n-radio-group v-model:value="currentResolutionRatio">
+                <n-radio
+                  v-for="item in resolutionRatio"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">视频内容：</div>
+              <n-radio-group v-model:value="currentVideoContentHint">
+                <n-radio
+                  v-for="item in videoContentHint"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+          <div class="link-item">
+            <n-space>
+              <div class="link-label">音频内容：</div>
+              <n-radio-group v-model:value="currentAudioContentHint">
+                <n-radio
+                  v-for="item in audioContentHint"
+                  :key="item.value"
+                  :value="item.value"
+                >
+                  {{ item.label }}
+                </n-radio>
+              </n-radio-group>
+            </n-space>
+          </div>
+        </div>
+      </template>
+
       <div
-        v-if="!appStore.remoteDesk.size"
-        class="tip"
+        class="list"
+        v-else
       >
-        已准备好连接
-      </div>
-
-      <div class="link-config">
-        <div class="link-item">
-          <n-space>
-            <div class="link-label">码率：</div>
-            <n-radio-group v-model:value="currentMaxBitrate">
-              <n-radio
-                v-for="item in maxBitrate"
-                :key="item.value"
-                :value="item.value"
-              >
-                {{ item.label }}
-              </n-radio>
-            </n-radio-group>
-          </n-space>
-        </div>
-        <div class="link-item">
-          <n-space>
-            <div class="link-label">帧率：</div>
-            <n-radio-group v-model:value="currentMaxFramerate">
-              <n-radio
-                v-for="item in maxFramerate"
-                :key="item.value"
-                :value="item.value"
-              >
-                {{ item.label }}
-              </n-radio>
-            </n-radio-group>
-          </n-space>
-        </div>
-        <div class="link-item">
-          <n-space>
-            <div class="link-label">分辨率：</div>
-            <n-radio-group v-model:value="currentResolutionRatio">
-              <n-radio
-                v-for="item in resolutionRatio"
-                :key="item.value"
-                :value="item.value"
-              >
-                {{ item.label }}
-              </n-radio>
-            </n-radio-group>
-          </n-space>
-        </div>
-        <div class="link-item">
-          <n-space>
-            <div class="link-label">视频内容：</div>
-            <n-radio-group v-model:value="currentVideoContentHint">
-              <n-radio
-                v-for="item in videoContentHint"
-                :key="item.value"
-                :value="item.value"
-              >
-                {{ item.label }}
-              </n-radio>
-            </n-radio-group>
-          </n-space>
-        </div>
-        <div class="link-item">
-          <n-space>
-            <div class="link-label">音频内容：</div>
-            <n-radio-group v-model:value="currentAudioContentHint">
-              <n-radio
-                v-for="item in audioContentHint"
-                :key="item.value"
-                :value="item.value"
-              >
-                {{ item.label }}
-              </n-radio>
-            </n-radio-group>
-          </n-space>
-        </div>
-      </div>
-
-      <div v-if="appStore.remoteDesk.size">
-        正在被{{ appStore.remoteDesk.size }}个用户控制
-        <n-button
-          type="error"
-          @click="handleCloseAll"
-        >
-          断开所有远程
-        </n-button>
-      </div>
-      <div class="list">
         <div
           class="item"
           v-for="(item, key) in appStore.remoteDesk"
           :key="key"
         >
-          <span>socketId：{{ item[1].sender }}，</span>
+          <span>正在被{{ item[1].deskUserUuid }}控制</span>
           <span
             class="del"
             @click="handleDel(item[1].sender)"
@@ -287,7 +277,7 @@ import { useTip } from '@/hooks/use-tip';
 import { useWebsocket } from '@/hooks/use-websocket';
 import { useWebRtcRemoteDesk } from '@/hooks/webrtc/remoteDesk';
 import { IIpcRendererData } from '@/interface';
-import { routerName } from '@/router';
+import router, { routerName } from '@/router';
 import { useAppStore } from '@/store/app';
 import { usePiniaCacheStore } from '@/store/cache';
 import { useNetworkStore } from '@/store/network';
@@ -306,6 +296,7 @@ import {
 import {
   createNullVideo,
   handlConstraints,
+  ipcRenderer,
   ipcRendererInvoke,
   ipcRendererOn,
   ipcRendererSend,
@@ -331,11 +322,7 @@ const {
   audioContentHint,
   videoContentHint,
 } = useRTCParams();
-const {
-  handleMoveScreenRightBottom,
-  handleScreen,
-  handleRtcBilldDeskBehavior,
-} = useIpcRendererSend();
+const { handleScreen, handleRtcBilldDeskBehavior } = useIpcRendererSend();
 
 const inviteInfoCptRef = ref<InstanceType<typeof InviteInfoCpt>>();
 const currentMaxBitrate = ref(maxBitrate.value[3].value);
@@ -472,9 +459,6 @@ watch(
   () => appStore.remoteDesk.size,
   (newval) => {
     if (newval) {
-      if (!isControlOther.value) {
-        handleMoveScreenRightBottom({ windowId: WINDOW_ID_ENUM.remote });
-      }
       if (!anchorStream.value) {
         handleScreen({ windowId: WINDOW_ID_ENUM.remote });
       }
@@ -561,7 +545,6 @@ async function handleInitIpcRendererSend() {
     requestId: getRandomString(8),
     data: {},
   });
-
   if (res?.code === 0) {
     appStore.primaryDisplaySize.width = res.data.width;
     appStore.primaryDisplaySize.height = res.data.height;
@@ -574,7 +557,7 @@ async function handleInitIpcRendererSend() {
     data: {},
   });
   if (res1?.code === 0) {
-    if (res1.data.platform !== 'darwin') {
+    if (res1?.data?.platform !== 'darwin') {
       appStore.scaleFactor = res1.data.scaleFactor;
     }
   }
@@ -705,6 +688,8 @@ function handleWsMsg() {
               resolutionRatio: data.data.resolutionRatio,
               videoContentHint: data.data.videoContentHint,
               audioContentHint: data.data.audioContentHint,
+              deskUserUuid: data.data.deskUserUuid,
+              remoteDeskUserUuid: data.data.remoteDeskUserUuid,
             });
             handleRTC(data.data.sender);
           }
@@ -760,6 +745,8 @@ async function handleRTC(receiver) {
       sender: mySocketId.value,
       receiver,
       videoEl: createNullVideo(),
+      deskUserUuid: cacheStore.deskUserUuid,
+      remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
     });
     webRtcRemoteDesk.sendOffer({
       sender: mySocketId.value,
@@ -816,12 +803,36 @@ async function handleConfirm(pwd: string) {
         setTimeout(() => {
           loading.value = false;
         }, 300);
-        ipcRendererSend({
-          windowId: 0,
-          channel: IPC_EVENT.createWindow,
-          requestId: getRandomString(8),
-          data: {
-            route: routerName.webrtc,
+        if (ipcRenderer) {
+          ipcRendererSend({
+            windowId: 0,
+            channel: IPC_EVENT.createWindow,
+            requestId: getRandomString(8),
+            data: {
+              route: routerName.webrtc,
+              query: {
+                roomId: cacheStore.remoteDeskUserUuid,
+                deskUserUuid: cacheStore.deskUserUuid,
+                deskUserPassword: cacheStore.deskUserPassword,
+                remoteDeskUserUuid: cacheStore.remoteDeskUserUuid,
+                remoteDeskUserPassword: pwd,
+                receiverId: receiverId.value,
+                maxBitrate: currentMaxBitrate.value,
+                maxFramerate: currentMaxFramerate.value,
+                resolutionRatio: currentResolutionRatio.value,
+                audioContentHint: currentAudioContentHint.value,
+                videoContentHint: currentVideoContentHint.value,
+              },
+              windowId: WINDOW_ID_ENUM.webrtc,
+              minWidth: 300,
+              minHeight: 300,
+              useWorkAreaSize: true,
+              frame: true,
+            },
+          });
+        } else {
+          router.push({
+            name: routerName.webrtc,
             query: {
               roomId: cacheStore.remoteDeskUserUuid,
               deskUserUuid: cacheStore.deskUserUuid,
@@ -835,13 +846,9 @@ async function handleConfirm(pwd: string) {
               audioContentHint: currentAudioContentHint.value,
               videoContentHint: currentVideoContentHint.value,
             },
-            windowId: WINDOW_ID_ENUM.webrtc,
-            minWidth: 300,
-            minHeight: 300,
-            useWorkAreaSize: true,
-            frame: true,
-          },
-        });
+          });
+        }
+
         const flag = cacheStore.linkDeviceList.find(
           (v) => v.remoteDeskUserUuid === cacheStore.remoteDeskUserUuid
         );
@@ -1201,10 +1208,30 @@ function handleDel(sender) {
   }
 
   .list {
+    overflow: scroll;
+    margin-top: 10px;
+    height: 190px;
+
+    @extend %customScrollbarHide;
+    &:hover {
+      @extend %customScrollbar;
+    }
     .item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
       .del {
+        margin-left: 10px;
+        padding: 1px 8px;
+        border-radius: 3px;
+        background-color: #ffe9e5;
         color: red;
+        font-size: 12px;
         cursor: pointer;
+        &:hover {
+          background-color: red;
+          color: white;
+        }
       }
     }
   }
