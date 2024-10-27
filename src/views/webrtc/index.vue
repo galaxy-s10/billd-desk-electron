@@ -423,60 +423,40 @@ function handleOpenDebug() {
 
 function handleKeyCombination(event: KeyboardEvent) {
   if (isWatchMode.value) return;
-  if (event.ctrlKey) {
+  if (event.ctrlKey || event.metaKey) {
     const key = event.key.toLowerCase();
+
     ENGLISH_LETTER.forEach((item) => {
       if (item === key) {
         console.log(`Ctrl+${key} 被按下`);
+        const keyres =
+          NUT_KEY_MAP[event.code] ||
+          NUT_KEY_MAP[event.key.toUpperCase()] ||
+          event.key;
+        const data = {
+          roomId: roomId.value,
+          sender: mySocketId.value,
+          receiver: receiverId.value,
+          type: BilldDeskBehaviorEnum.keyboardPressKey,
+          key: [NUT_KEY_MAP.ControlLeft, keyres],
+          x: 0,
+          y: 0,
+          amount: 0,
+        };
         networkStore.rtcMap
           .get(receiverId.value)
           ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
             requestId: getRandomString(8),
             msgType: WsMsgTypeEnum.billdDeskBehavior,
-            data: {
-              roomId: roomId.value,
-              sender: mySocketId.value,
-              receiver: receiverId.value,
-              type: BilldDeskBehaviorEnum.keyboardPressKey,
-              key: [
-                NUT_KEY_MAP.ControlLeft,
-                NUT_KEY_MAP[event.code] ||
-                  NUT_KEY_MAP[event.key.toUpperCase()] ||
-                  event.key,
-              ],
-              x: 0,
-              y: 0,
-              amount: 0,
-            },
+            data,
           });
-      }
-    });
-  }
-  if (event.metaKey) {
-    const key = event.key.toLowerCase();
-    ENGLISH_LETTER.forEach((item) => {
-      if (item === key) {
-        console.log(`MetaKey+${key} 被按下`);
+        data.key = [NUT_KEY_MAP.MetaLeft, keyres];
         networkStore.rtcMap
           .get(receiverId.value)
           ?.dataChannelSend<WsBilldDeskBehaviorType['data']>({
             requestId: getRandomString(8),
             msgType: WsMsgTypeEnum.billdDeskBehavior,
-            data: {
-              roomId: roomId.value,
-              sender: mySocketId.value,
-              receiver: receiverId.value,
-              type: BilldDeskBehaviorEnum.keyboardPressKey,
-              key: [
-                NUT_KEY_MAP.MetaLeft,
-                NUT_KEY_MAP[event.code] ||
-                  NUT_KEY_MAP[event.key.toUpperCase()] ||
-                  event.key,
-              ],
-              x: 0,
-              y: 0,
-              amount: 0,
-            },
+            data,
           });
       }
     });
