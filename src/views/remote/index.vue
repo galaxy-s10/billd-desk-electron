@@ -1208,7 +1208,7 @@ function handleDel(sender) {
   .list {
     overflow: scroll;
     margin-top: 10px;
-    height: 190px;
+    height: 170px;
 
     @extend %customScrollbarHide;
     &:hover {

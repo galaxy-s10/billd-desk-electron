@@ -423,7 +423,7 @@ function handleOpenDebug() {
 
 function handleKeyCombination(event: KeyboardEvent) {
   if (isWatchMode.value) return;
-  if (event.ctrlKey || event.metaKey) {
+  if (event.ctrlKey) {
     const key = event.key.toLowerCase();
     ENGLISH_LETTER.forEach((item) => {
       if (item === key) {
