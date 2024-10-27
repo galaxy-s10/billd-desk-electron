@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.144](https://github.com/galaxy-s10/billd-desk-electron/compare/v0.0.143...v0.0.144) (2024-10-27)
+
+
+### Bug Fixes
+
+* 优化 ([d6fb920](https://github.com/galaxy-s10/billd-desk-electron/commit/d6fb92043e776659548ec153ef356827f1fa8f99))
+
 ### [0.0.143](https://github.com/galaxy-s10/billd-desk-electron/compare/v0.0.142...v0.0.143) (2024-10-27)
 
 
