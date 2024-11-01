@@ -1,6 +1,6 @@
 {
   "name": "billd-desk-electron",
-  "version": "0.0.164",
+  "version": "0.0.165",
   "repository": {
     "type": "git",
     "url": "https://github.com/galaxy-s10/billd-desk-electron"
@@ -14,7 +14,7 @@
     "build:linux": "standard-version && vite build && electron-builder --linux",
     "build:mac": "standard-version && vite build && electron-builder --mac",
     "build:mw": "standard-version && vite build && electron-builder --mac --win",
-    "build:win": "standard-version && vite build && electron-builder --win",
+    "build:win": "standard-version && vite build && electron-builder --no-cache --win",
     "cz": "cz",
     "dev": "rimraf electron-dist dist && vite",
     "gen-icons": "electron-icon-builder --input=./build/source/billd.png --output=./build/ --flatten",
