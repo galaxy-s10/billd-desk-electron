@@ -17,7 +17,7 @@
     "build:win": "standard-version && vite build && electron-builder --win",
     "cz": "cz",
     "dev": "rimraf electron-dist dist && vite",
-    "gen-icons": "electron-icon-builder --input=./build/source/Hololo.png --output=./build/ --flatten",
+    "gen-icons": "electron-icon-builder --input=./build/source/billd.png --output=./build/ --flatten",
     "preview": "vite preview",
     "release": "standard-version"
   },
