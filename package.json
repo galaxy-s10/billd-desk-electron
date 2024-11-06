@@ -18,6 +18,8 @@
     "cz": "cz",
     "dev": "rimraf electron-dist dist && vite",
     "gen-icons": "electron-icon-builder --input=./build/source/billd.png --output=./build/ --flatten",
+    "lint": "eslint --config ./.eslintrc.cjs . --ext .js,.jsx,.ts,.tsx,.vue --cache",
+    "lint:fix": "eslint --config ./.eslintrc.cjs . --ext .js,.jsx,.ts,.tsx,.vue --cache --fix",
     "preview": "vite preview",
     "release": "standard-version"
   },
